@@ -1,0 +1,58 @@
+#loading-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #6e121c;
+}
+
+.loading-logo {
+    text-align: center;
+}
+
+.loading-logo img {
+    width: 108px;
+    margin-bottom: 24px;
+    border-radius: 22px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.loading {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto;
+}
+
+.loading .effects {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.loading .effect-1 {
+    border-left-color: #ffffff;
+    animation: loading-rotate 1s ease infinite;
+}
+
+.loading .effect-2 {
+    border-left-color: rgba(255, 255, 255, 0.6);
+    animation: loading-rotate 1s ease-in infinite;
+}
+
+.loading .effect-3 {
+    border-left-color: rgba(255, 255, 255, 0.3);
+    animation: loading-rotate 1s ease-out infinite;
+}
+
+@keyframes loading-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "i-wms",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:menu": "node scripts/checkMenu.mjs",
+    "gen:page": "node scripts/genPage.mjs",
+    "deploy": "vite build && firebase deploy --only hosting",
+    "deploy:preview": "vite build && firebase hosting:channel:deploy preview"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
+    "@handsontable/vue3": "^16.1.1",
+    "@kyvg/vue3-notification": "^3.4.1",
+    "ant-design-vue": "^4.2.6",
+    "apexcharts": "^5.3.5",
+    "axios": "^1.12.2",
+    "dayjs": "^1.11.18",
+    "firebase": "^12.18.0",
+    "handsontable": "^16.1.1",
+    "maska": "^3.2.0",
+    "pinia": "^3.0.3",
+    "sortablejs": "^1.15.6",
+    "vue": "^3.5.22",
+    "vue-i18n": "^11.1.12",
+    "vue-loading-overlay": "^6.0.6",
+    "vue-router": "^4.6.3",
+    "vue3-apexcharts": "^1.10.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.7"
+  }
+}

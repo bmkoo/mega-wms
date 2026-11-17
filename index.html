@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="google" content="notranslate" />
+    <meta name="viewport" content="initial-scale=1, viewport-fit=cover, width=device-width" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- 경로는 Vite 가 base 를 자동으로 붙이므로 루트 상대경로로 적는다 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+
+    <meta name="theme-color" content="#6e121c" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="description" content="i-WMS | 창고관리시스템" />
+    <meta name="keywords" content="WMS, 창고관리, 입출고, 재고" />
+
+    <title>%VITE_APP_TITLE%</title>
+
+    <link rel="stylesheet" href="/loader.css" />
+</head>
+
+<body>
+<noscript>
+    <strong>JavaScript가 활성화되어야 i-WMS를 사용할 수 있습니다.</strong>
+</noscript>
+
+<!-- 앱 마운트 전까지 노출되는 로딩 화면 (main.js 에서 제거) -->
+<div id="loading-bg">
+    <div class="loading-logo">
+        <img src="/icon-192.png" alt="i-WMS" />
+        <div class="loading">
+            <div class="effect-1 effects"></div>
+            <div class="effect-2 effects"></div>
+            <div class="effect-3 effects"></div>
+        </div>
+    </div>
+</div>
+
+<div id="app"></div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

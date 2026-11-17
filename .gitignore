@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+release
+.firebase
+.env
+.env.*
+.DS_Store
+*.local
+*.log
+npm-debug.log*
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json

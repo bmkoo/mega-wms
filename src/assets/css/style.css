@@ -1,0 +1,244 @@
+/* ─────────────────────────────────────────────
+   디자인 토큰
+   ───────────────────────────────────────────── */
+:root {
+    /* 레이아웃 높이/폭 (컴포넌트에서 동일 값을 참조해야 스크롤 계산이 맞는다) */
+    --wms-gnb-height: 44px;
+    --wms-userbar-height: 34px;
+    --wms-tabbar-height: 34px;
+    --wms-footer-height: 26px;
+    --wms-lnb-width: 240px;
+    --wms-lnb-width-slim: 52px;
+
+    /* 색상 (브랜드: i-WMS 버건디 레드) */
+    --wms-gnb-bg: #6e121c;
+    --wms-gnb-bg-dark: #4a0c13;
+    --wms-gnb-text: rgba(255, 255, 255, 0.78);
+    --wms-primary: #a51c30;
+    --wms-primary-soft: #fbeaec;
+    --wms-accent: #ff6a3d;
+    --wms-bg: #f6f3f3;
+    --wms-panel: #ffffff;
+    --wms-border: #e6dedf;
+    --wms-border-strong: #d2c5c7;
+    --wms-text: #2c2426;
+    --wms-text-sub: #7d7073;
+    --wms-danger: #e5484d;
+    --wms-success: #2f9e5f;
+    --wms-warning: #f2a413;
+
+    /* 프레임 영역별 배경 (테마 변경 시 이 값만 조정하면 된다) */
+    --wms-userbar-bg: #f7eded;
+    --wms-tabbar-bg: #f0e4e5;
+    --wms-lnb-head-bg: #fbf6f6;
+    --wms-lnb-sub-bg: #fdfafa;
+    --wms-table-head-bg: #f8f3f3;
+}
+
+/* ─────────────────────────────────────────────
+   기본 리셋 / 타이포
+   ───────────────────────────────────────────── */
+html,
+body,
+#app {
+    height: 100%;
+    margin: 0;
+}
+
+html,
+body {
+    font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    'Malgun Gothic', sans-serif;
+    font-size: 13px;
+    color: var(--wms-text);
+    background-color: var(--wms-bg);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* ─────────────────────────────────────────────
+   스크롤바
+   ───────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(35, 48, 61, 0.22);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(35, 48, 61, 0.4);
+}
+
+/* ─────────────────────────────────────────────
+   레이아웃 유틸
+   ───────────────────────────────────────────── */
+.d-flex {
+    display: flex;
+}
+
+.d-start {
+    align-items: flex-start;
+}
+
+.d-center {
+    align-items: center;
+}
+
+.d-between {
+    justify-content: space-between;
+}
+
+.d-end {
+    justify-content: flex-end;
+}
+
+.d-column {
+    flex-direction: column;
+}
+
+.flex-1 {
+    flex: 1;
+    min-width: 0;
+}
+
+.gap-4 {
+    gap: 4px;
+}
+
+.gap-8 {
+    gap: 8px;
+}
+
+.gap-12 {
+    gap: 12px;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.center {
+    text-align: center;
+}
+
+.right {
+    text-align: right;
+}
+
+/* ─────────────────────────────────────────────
+   텍스트 유틸
+   ───────────────────────────────────────────── */
+.font-11 {
+    font-size: 11px;
+}
+
+.font-12 {
+    font-size: 12px;
+}
+
+.font-13 {
+    font-size: 13px;
+}
+
+.font-15 {
+    font-size: 15px;
+}
+
+.font-18 {
+    font-size: 18px;
+}
+
+.font-500 {
+    font-weight: 500;
+}
+
+.font-600 {
+    font-weight: 600;
+}
+
+.font-700 {
+    font-weight: 700;
+}
+
+.c-black0 {
+    color: var(--wms-text);
+}
+
+.c-gray0 {
+    color: var(--wms-text-sub);
+}
+
+.c-primary {
+    color: var(--wms-primary);
+}
+
+.c-accent {
+    color: var(--wms-accent);
+}
+
+.c-danger {
+    color: var(--wms-danger);
+}
+
+.ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────
+   공용 패널 / 카드
+   ───────────────────────────────────────────── */
+.wms-panel {
+    background-color: var(--wms-panel);
+    border: 1px solid var(--wms-border);
+    border-radius: 4px;
+}
+
+.wms-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--wms-border);
+    font-weight: 600;
+}
+
+.wms-panel__body {
+    padding: 12px;
+}
+
+/* 조회조건 영역 */
+.wms-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    background-color: var(--wms-panel);
+    border: 1px solid var(--wms-border);
+    border-radius: 4px;
+}
+
+.wms-search__label {
+    color: var(--wms-text-sub);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 페이지 공용 래퍼 */
+.wms-page {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+}

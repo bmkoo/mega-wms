@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 먼저 `npm run dev` 로 개발 서버를 띄운 뒤 F5 로 실행한다.
+            "type": "chrome",
+            "request": "launch",
+            "name": "Chrome: 개발 서버 디버그",
+            "url": "http://localhost:5174",
+            "webRoot": "${workspaceFolder}/src",
+            "sourceMapPathOverrides": {
+                "/src/*": "${workspaceFolder}/src/*",
+                "/@fs/*": "/*"
+            }
+        },
+        {
+            // 이미 --remote-debugging-port=9222 로 열어 둔 Chrome 에 붙는다.
+            "type": "chrome",
+            "request": "attach",
+            "name": "Chrome: 실행 중인 브라우저에 연결",
+            "port": 9222,
+            "url": "http://localhost:5174/*",
+            "webRoot": "${workspaceFolder}/src"
+        }
+    ]
+}
