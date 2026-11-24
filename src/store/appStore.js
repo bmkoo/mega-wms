@@ -129,7 +129,7 @@ export const useAppStore = defineStore('app', {
 
         loadConfig() {
             const ip = localStorage.getItem('ip') || import.meta.env.VITE_API_URL;
-            const apiUrl = localStorage.getItem('axios') || `http://${ip}:8802/`;
+            const apiUrl = localStorage.getItem('axios') || `http://${ip}:8802/api`;
             this.config = { ip, apiUrl };
         },
 

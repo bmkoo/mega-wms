@@ -33,6 +33,14 @@ export function formUrl({ id, token }) {
 }
 
 export function openFormWindow(href) {
+  // 개발 중 IntelliJ 디버깅용: .env.development 에 VITE_POPUP_SAME_TAB=true 면 새 창 대신 같은 탭으로 연다
+  // (window.open 으로 뜬 창은 IntelliJ 브레이크가 걸리지 않는다. 운영 빌드에서는 항상 새 창)
+  if (import.meta.env.DEV && import.meta.env.VITE_POPUP_SAME_TAB === 'true') {
+    const url = new URL(href);
+    window.location.assign(`${url.pathname}${url.search}`);
+    return window;
+  }
+
   const width = 720;
   const height = 720;
   const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));

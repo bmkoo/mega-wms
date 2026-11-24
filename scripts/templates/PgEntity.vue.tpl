@@ -33,7 +33,7 @@
     </div>
 
     <div class="__PREFIX__-search">
-      <!-- 엔티티 필드마다 검색 조건 1개, 한 행에 4개씩. 문자열=부분일치 / 날짜=기간 / 숫자=최소~최대 -->
+      <!-- 엔티티 필드마다 검색 조건 1개, 한 행에 4개씩. 문자열=부분일치 / 날짜=기간 / 숫자=최소~최대 / 공통코드=선택 -->
       <div class="__PREFIX__-search__grid">
         <div v-for="f in FIELDS" :key="f.data" class="__PREFIX__-search__item">
           <span class="__PREFIX__-search__label" :title="$t(`field.${f.data}`)">{{ $t(`field.${f.data}`) }}</span>
@@ -49,6 +49,13 @@
             <span>~</span>
             <a-input-number v-model:value="cond[f.data].max" size="small" :controls="false" @press-enter="onSearch" />
           </div>
+          <a-select
+            v-else-if="f.type === 'code'"
+            v-model:value="cond[f.data]"
+            :options="[{ value: '', label: $t('common.all') }, ...codeStore.options(f.codeGroup)]"
+            size="small"
+            class="flex-1"
+          />
           <a-input v-else v-model:value="cond[f.data]" size="small" class="flex-1" allow-clear @press-enter="onSearch" />
         </div>
       </div>
@@ -102,12 +109,15 @@ import Handsontable from 'handsontable';
 import 'handsontable/styles/handsontable.css';
 import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
+import { useCommonCodeStore } from '@/store/commonCodeStore';
 // #if popup
 import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './__POPUP_FILE__';
 // #endif
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
+/** 공통코드 (type: 'code' 필드의 코드명/선택 목록). 로그인 후 router 에서 미리 불러둔다 */
+const codeStore = useCommonCodeStore();
 
 defineOptions({ name: 'Pg__ENTITY__' });
 
@@ -140,7 +150,7 @@ const DEFAULT_SEARCH = {
 
 const search = reactive({ ...DEFAULT_SEARCH });
 
-/** 필드별 검색 조건 초기값: 문자열 '' / 날짜 null([시작, 끝]) / 숫자 { min, max } */
+/** 필드별 검색 조건 초기값: 문자열·공통코드 '' / 날짜 null([시작, 끝]) / 숫자 { min, max } */
 const emptyCond = () =>
   Object.fromEntries(
     FIELDS.map((f) => [f.data, f.type === 'number' ? { min: null, max: null } : f.type === 'date' ? null : ''])
@@ -177,6 +187,10 @@ const pageNumbers = computed(() => {
 });
 
 const FIELD_TYPE = Object.fromEntries(FIELDS.map((f) => [f.data, f.type]));
+const FIELD_BY_KEY = Object.fromEntries(FIELDS.map((f) => [f.data, f]));
+
+/** 공통코드 필드 값 → 코드명 (그룹·코드가 없으면 코드값 그대로) */
+const codeName = (f, value) => codeStore.name(f.codeGroup, value);
 
 /** 서버 날짜 값(ISO 문자열 / "yyyy-MM-dd HH:mm:ss" / [y, M, d, h, m, s] 배열 / epoch) → dayjs. 없거나 잘못되면 null */
 const toDate = (value) => {
@@ -197,7 +211,8 @@ const compareBy = (sortValue) => {
   const valueOf = (row) => {
     if (type === 'date') return toDate(row[key])?.valueOf() ?? null;
     if (type === 'number') return toNumber(row[key]);
-    const text = row[key];
+    // 공통코드는 화면에 보이는 코드명 기준으로 정렬한다
+    const text = type === 'code' ? codeName(FIELD_BY_KEY[key], row[key]) : row[key];
     return text === null || text === undefined || text === '' ? null : String(text);
   };
   return (a, b) => {
@@ -236,13 +251,14 @@ const matchField = (row, f) => {
     if (c.max !== null && n > c.max) return false;
     return true;
   }
+  if (f.type === 'code') return !c || String(row[f.data] ?? '') === c; // 공통코드는 정확히 일치
   const keyword = String(c || '').trim().toLowerCase();
   return !keyword || String(row[f.data] ?? '').toLowerCase().includes(keyword);
 };
 
 const filterRows = (rows) => rows.filter((row) => FIELDS.every((f) => matchField(row, f)));
 
-/** 서버로 보낼 조건 (비어 있지 않은 것만). 문자열=<필드>, 날짜=<필드>From/To(YYYYMMDD), 숫자=<필드>Min/Max */
+/** 서버로 보낼 조건 (비어 있지 않은 것만). 문자열·공통코드=<필드>, 날짜=<필드>From/To(YYYYMMDD), 숫자=<필드>Min/Max */
 const toParams = () => {
   const params = {};
   FIELDS.forEach((f) => {
@@ -276,6 +292,20 @@ const onAfterSelection = function (row, _col, row2) {
   activeRange.start = row < 0 ? -1 : Math.min(row, row2);
   activeRange.end = row < 0 ? -1 : Math.max(row, row2);
 };
+
+/** 숫자 컬럼은 1000 단위 콤마로 보여준다. 데이터는 숫자 그대로라 정렬·검색·엑셀에는 영향이 없다 */
+const commaRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, commonFunction.fncComma(value), cellProperties]);
+};
+
+/** 콤마를 붙일 숫자 컬럼인지 (@Id 숫자 필드는 제외) */
+const isCommaField = (f) => f.type === 'number' && !f.id;
+
+/** 공통코드 컬럼은 코드 대신 코드명을 보여준다. 데이터는 코드 그대로 (검색·팝업·저장은 코드 기준) */
+const codeRendererOf = (f) =>
+  function (instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, codeName(f, value), cellProperties]);
+  };
 // #if popup
 
 /** 순번 셀은 상세 팝업 링크로 보이게 한다 */
@@ -336,7 +366,14 @@ const createGrid = () => {
         // #else
         { data: 'no', className: 'htCenter', readOnly: true, editor: false },
         // #endif
-        ...FIELDS.map((f) => ({ data: f.data, className: f.className, readOnly: true, editor: false })),
+        ...FIELDS.map((f) => ({
+          data: f.data,
+          className: f.className,
+          readOnly: true,
+          editor: false,
+          ...(isCommaField(f) ? { renderer: commaRenderer } : {}),
+          ...(f.type === 'code' ? { renderer: codeRendererOf(f) } : {}),
+        })),
       ],
       colWidths: [50, ...FIELDS.map((f) => f.width)],
       height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
@@ -428,8 +465,18 @@ const onExcel = () => {
     message.warning(t('common.noData'));
     return;
   }
+  // 공통코드 컬럼은 엑셀에 코드명으로 넣는다
+  const codeFields = FIELDS.filter((f) => f.type === 'code');
+  const rows = decorate(filtered.value, 1).map((row) => {
+    if (!codeFields.length) return row;
+    const view = { ...row };
+    codeFields.forEach((f) => {
+      view[f.data] = codeName(f, row[f.data]);
+    });
+    return view;
+  });
   commonFunction.fncExportExcel(
-    decorate(filtered.value, 1),
+    rows,
     [
       { title: t('field.seq'), dataIndex: 'no' },
       ...FIELDS.map((f) => ({ title: t(`field.${f.data}`), dataIndex: f.data })),
@@ -458,6 +505,8 @@ onMounted(() => {
   createGrid();
   measureGrid();
   onSearch();
+  // 공통코드가 그리드보다 늦게 도착하면 코드명으로 다시 그린다 (이미 불러왔으면 바로 끝남)
+  codeStore.load().then(() => getHot()?.render());
   window.addEventListener('resize', measureGrid);
   // #if popup
   window.addEventListener('message', onFormMessage);

@@ -45,13 +45,6 @@ export const MENUS = [
                     { path: 'statsWorker', nameKey: 'menu.statsWorker', roles: STAFF_ROLES },
                 ],
             },
-        ],
-    },
-    {
-        key: 'SYSTEM',
-        nameKey: 'gnb.system',
-        icon: 'SettingOutlined',
-        children: [
             {
                 key: 'SYSTEM_MENU',
                 nameKey: 'group.system',
@@ -63,13 +56,6 @@ export const MENUS = [
                     { path: 'userPermission', nameKey: 'menu.userPermission', roles: [ROLE.ADMIN] },
                 ],
             },
-        ],
-    },
-    {
-        key: 'MASTER',
-        nameKey: 'gnb.master',
-        icon: 'IdcardOutlined',
-        children: [
             {
                 key: 'MASTER_MENU',
                 nameKey: 'group.master',
@@ -92,13 +78,6 @@ export const MENUS = [
                     { path: 'waybillSetting', nameKey: 'menu.waybillSetting', roles: STAFF_ROLES },
                 ],
             },
-        ],
-    },
-    {
-        key: 'ORDER',
-        nameKey: 'gnb.order',
-        icon: 'ShoppingCartOutlined',
-        children: [
             {
                 key: 'ORDER_MENU',
                 nameKey: 'group.order',
@@ -109,13 +88,7 @@ export const MENUS = [
                     { path: 'confirmMessage', nameKey: 'menu.confirmMessage', roles: STAFF_ROLES },
                 ],
             },
-        ],
-    },
-    {
-        key: 'DELIVERY',
-        nameKey: 'gnb.delivery',
-        icon: 'CarOutlined',
-        children: [
+            //
             {
                 key: 'DELIVERY_MENU',
                 nameKey: 'group.delivery',
@@ -131,30 +104,7 @@ export const MENUS = [
                     { path: 'outboundStatus', nameKey: 'menu.outboundStatus', roles: ALL_ROLES },
                 ],
             },
-        ],
-    },
-    {
-        key: 'PRODUCT',
-        nameKey: 'gnb.product',
-        icon: 'TagsOutlined',
-        children: [
-            {
-                key: 'PRODUCT_MENU',
-                nameKey: 'group.product',
-                icon: 'TagsOutlined',
-                children: [
-                    { path: 'productAssort', nameKey: 'menu.productExcelAssort', roles: ALL_ROLES },
-                    { path: 'productBatchUpdate', nameKey: 'menu.productBatchUpdate', roles: STAFF_ROLES },
-                    { path: 'barcodeLabel', nameKey: 'menu.barcodeLabel', roles: ALL_ROLES },
-                ],
-            },
-        ],
-    },
-    {
-        key: 'PURCHASE',
-        nameKey: 'gnb.purchase',
-        icon: 'FileTextOutlined',
-        children: [
+            //
             {
                 key: 'PURCHASE_MENU',
                 nameKey: 'group.purchase',
@@ -167,13 +117,7 @@ export const MENUS = [
                     { path: 'purchaseSendList', nameKey: 'menu.purchaseSendList', roles: STAFF_ROLES },
                 ],
             },
-        ],
-    },
-    {
-        key: 'SETTLE',
-        nameKey: 'gnb.settle',
-        icon: 'AccountBookOutlined',
-        children: [
+            //
             {
                 key: 'SETTLE_MENU',
                 nameKey: 'group.settle',
@@ -191,6 +135,90 @@ export const MENUS = [
                     { path: 'productSalesHistory', nameKey: 'menu.productSalesHistory', roles: STAFF_ROLES },
                 ],
             },
+            //
+            {
+                key: 'PRODUCT_MENU',
+                nameKey: 'group.product',
+                icon: 'TagsOutlined',
+                children: [
+                    { path: 'productAssort', nameKey: 'menu.productExcelAssort', roles: ALL_ROLES },
+                    { path: 'productBatchUpdate', nameKey: 'menu.productBatchUpdate', roles: STAFF_ROLES },
+                    { path: 'barcodeLabel', nameKey: 'menu.barcodeLabel', roles: ALL_ROLES },
+                ],
+            },
+        ],
+    },
+    {
+        key: 'SYSTEM',
+        nameKey: 'gnb.system',
+        icon: 'SettingOutlined',
+        children: [
+            {
+                key: 'BMKOO_L2_MENU',
+                nameKey: 'group.orderInfo',
+                icon: 'TagsOutlined',
+                children: [
+                    { path: 'user', nameKey: 'menu.user', component: 'System/PgUser', roles:ALL_ROLES },
+                    { path: 'commonCode', nameKey: 'menu.commonCode', component: 'System/PgCommonCode', roles: STAFF_ROLES },
+                    { path: 'errorLog', nameKey: 'menu.errorLog', component: 'System/PgErrorLog', roles: STAFF_ROLES },
+                    { path: 'loginHistory', nameKey: 'menu.loginHistory', component: 'System/PgLoginHistory', roles: STAFF_ROLES },
+                    { path: 'product', nameKey: 'menu.product', component: 'System/PgProduct', roles: STAFF_ROLES },
+                    { path: 'orderRaw', nameKey: 'menu.orderRaw', component: 'System/PgOrderRaw', roles: STAFF_ROLES },
+                    { path: 'channel', nameKey: 'menu.channel', component: 'System/PgChannel', roles: STAFF_ROLES },
+                    { path: 'order', nameKey: 'menu.order', component: 'System/PgOrder', roles: STAFF_ROLES },
+                    { path: 'orderItem', nameKey: 'menu.orderItem', component: 'System/PgOrderItem', roles: STAFF_ROLES },
+                    { path: 'stockAssign', nameKey: 'menu.stockAssign', component: 'System/PgStockAssign', roles: STAFF_ROLES },
+                    { path: 'orderTransfer', nameKey: 'menu.orderTransfer', component: 'System/PgOrderTransfer', roles: STAFF_ROLES },
+                ],
+            },
+        ],
+    },
+    {
+        key: 'MASTER',
+        nameKey: 'gnb.master',
+        icon: 'IdcardOutlined',
+        children: [
+
+        ],
+    },
+    {
+        key: 'ORDER',
+        nameKey: 'gnb.order',
+        icon: 'ShoppingCartOutlined',
+        children: [
+
+        ],
+    },
+    {
+        key: 'DELIVERY',
+        nameKey: 'gnb.delivery',
+        icon: 'CarOutlined',
+        children: [
+
+        ],
+    },
+    {
+        key: 'PRODUCT',
+        nameKey: 'gnb.product',
+        icon: 'TagsOutlined',
+        children: [
+
+        ],
+    },
+    {
+        key: 'PURCHASE',
+        nameKey: 'gnb.purchase',
+        icon: 'FileTextOutlined',
+        children: [
+
+        ],
+    },
+    {
+        key: 'SETTLE',
+        nameKey: 'gnb.settle',
+        icon: 'AccountBookOutlined',
+        children: [
+
         ],
     },
     {
@@ -228,7 +256,6 @@ export const MENUS = [
                 nameKey: 'group.systemUser',
                 icon: 'TeamOutlined',
                 children: [
-                    { path: 'user', nameKey: 'menu.user', roles: [ROLE.ADMIN] },
                     { path: 'userGroup', nameKey: 'menu.userGroup', roles: [ROLE.ADMIN] },
                     { path: 'role', nameKey: 'menu.role', roles: [ROLE.ADMIN] },
                     { path: 'menuManage', nameKey: 'menu.menuManage', roles: [ROLE.ADMIN] },
@@ -247,6 +274,7 @@ export const MENUS = [
 
                 ],
             },
+
         ],
     },
     {
@@ -264,24 +292,7 @@ export const MENUS = [
                 ],
             },
         ],
-    },
-    {
-        key: 'BMKOO',
-        nameKey: 'gnb.bmkoo',
-        icon: 'CustomerServiceOutlined',
-        children: [
-            {
-                key: 'BMKOO-SUB',
-                nameKey: 'group.remoteSupport',
-                icon: 'ToolOutlined',
-                children: [
-                    { path: 'apiLog', nameKey: 'menu.apiLog', roles: [ROLE.ADMIN] },
-                    { path: 'orderRaw', nameKey: 'menu.orderRaw', component: 'Bmkoo/PgOrderRaw', roles: STAFF_ROLES },
-                    { path: 'product', nameKey: 'menu.product', component: 'Bmkoo/PgProduct', roles: STAFF_ROLES },
-                ],
-            },
-        ],
-    },
+    }
 ];
 
 /**

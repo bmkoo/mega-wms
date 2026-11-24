@@ -66,6 +66,9 @@ class apiFunctions {
 
     async fncPutApi(url, data) {
         try {
+            // data가 이미 배열인지 확인 후, 객체라면 [data] 형태로 감싸서 전송
+            const payload = Array.isArray(data) ? data : [data];
+
             const r = await this.#instance().put(url, data);
             return r.data;
         } catch (error) {
@@ -306,11 +309,58 @@ class apiFunctions {
     // ─────────────────────────────────────────────
     // 자동 생성 조회 API (scripts/genPage.mjs)
     // ─────────────────────────────────────────────
-    onApiQueryOrderRaw(params) {
-        return this.fncGetApi('v1/orderRawList', params);
+
+
+    //generate by bmkoo e
+    onApiQueryCommonCode(params) {
+        return this.fncGetApi('v1/commonCodes', params);
     }
 
-    onApiGetProductList(params) {
+    onApiGetCommonCode(id) {
+        return this.fncGetApi(`v1/commonCodes/${id}`);
+    }
+
+    onApiSaveCommonCode(data) {
+        return this.fncPostApi('v1/commonCodes/save', data);
+    }
+
+    onApiQueryErrorLog(params) {
+        return this.fncGetApi('v1/errorLog', params);
+    }
+
+    onApiGetErrorLog(id) {
+        return this.fncGetApi(`v1/errorLog/${id}`);
+    }
+
+    onApiSaveErrorLog(data) {
+        return this.fncPostApi('v1/errorLog/save', data);
+    }
+
+    onApiQueryUser(params) {
+        return this.fncGetApi('v1/users', params);
+    }
+
+    onApiGetUser(id) {
+        return this.fncGetApi(`v1/user`, { userCd: id});
+    }
+
+    onApiSaveUser(data) {
+        return this.fncPostApi('v1/user/save', data);
+    }
+
+    onApiQueryLoginHistory(params) {
+        return this.fncGetApi('v1/loginHistory', params);
+    }
+
+    onApiGetLoginHistory(id) {
+        return this.fncGetApi(`v1/loginHistory/${id}`);
+    }
+
+    onApiSaveLoginHistory(data) {
+        return this.fncPutApi('v1/loginHistory/save', data);
+    }
+
+    onApiGetMegaProduct(params) {
         return this.fncGetApi('v1/productList', params);
     }
 
@@ -319,7 +369,70 @@ class apiFunctions {
     }
 
     onApiSaveProduct(data) {
-        return this.fncPostApi('v1/product/save', data);
+        return this.fncPutApi('v1/product/save', data);
+    }
+
+    /** 상품 세트 구성품 목록 (상품 상세 팝업). 백엔드 ProductController.componentList */
+    onApiQueryProductComponent(params) {
+        return this.fncGetApi('v1/productComponentList', params);
+    }
+
+    onApiGetMegaOrderRaw(params) {
+        return this.fncGetApi('v1/orderRawList', params);
+    }
+
+    onApiGetOrderRaw(id) {
+        return this.fncGetApi(`v1/orderRawList/${id}`);
+    }
+
+    onApiSaveOrderRaw(data) {
+        return this.fncPostApi('v1/orderRaw/save', data);
+    }
+
+    /** 주문 원본(OrderRaw) 데이터 이관. body = 주문원본 화면의 현재 조회 조건 */
+    onApiOrderRawMove(data) {
+        return this.fncPostApi('v1/orderRawMove', data);
+    }
+
+    onApiGetChannel(params) {
+        return this.fncGetApi('v1/channelList', params);
+    }
+
+    onApiGetChannelList(id) {
+        return this.fncGetApi(`v1/channel/${id}`);
+    }
+
+    onApiSaveChannel(data) {
+        return this.fncPostApi('v1/channel/save', data);
+    }
+
+    onApiGetOrder(params) {
+        return this.fncGetApi('v1/orderList', params);
+    }
+
+    onApiGetOrderList(id) {
+        return this.fncGetApi(`v1/order/${id}`);
+    }
+
+    onApiSaveOrder(data) {
+        return this.fncPostApi('v1/order/save', data);
+    }
+
+    onApiGetOrderItem(params) {
+        return this.fncGetApi('v1/orderItemList', params);
+    }
+
+    onApiGetOrderItemList(id) {
+        return this.fncGetApi(`v1/orderItem/${id}`);
+    }
+
+    onApiSaveOrderItem(data) {
+        return this.fncPostApi('v1/orderItem/save', data);
+    }
+
+    /** 재고할당: 주문 + 주문품목 + 상품마스터 (품목 1개 = 1행). params = 화면 검색 조건 */
+    onApiQueryStockAssign(params) {
+        return this.fncGetApi('v1/stockAssignList', params);
     }
 }
 

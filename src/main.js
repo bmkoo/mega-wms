@@ -67,7 +67,7 @@ app.config.globalProperties.$message = message;
 // 서버 설정 (localStorage 우선, 없으면 .env 값)
 // ─────────────────────────────────────────────
 const ip = localStorage.getItem('ip') || import.meta.env.VITE_API_URL;
-const apiUrl = localStorage.getItem('axios') || `http://${ip}:8802/`;
+const apiUrl = localStorage.getItem('axios') || `http://${ip}:8802/api`;
 
 localStorage.setItem('ip', ip);
 localStorage.setItem('axios', apiUrl);

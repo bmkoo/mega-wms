@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { LEAF_MENUS, ROLE } from '@/config/menuConfig';
 import { useAppStore } from '@/store/appStore';
+import { useCommonCodeStore } from '@/store/commonCodeStore';
 import { logScreenView } from '@/firebase';
 
 const HOME_ROUTE = 'dashboard';
@@ -135,14 +136,103 @@ const routes = [
                     popup: true,
                 },
             },
+
+            {
+                path: 'common-code',
+                name: 'commonCodeForm',
+                component: () => import('@/views/pages/System/PgCommonCodeForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.commonCode',
+                    popup: true,
+                },
+            },
+            {
+                path: 'error-log',
+                name: 'errorLogForm',
+                component: () => import('@/views/pages/System/PgErrorLogForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.errorLog',
+                    popup: true,
+                },
+            },
+            {
+                path: 'user',
+                name: 'userForm',
+                component: () => import('@/views/pages/System/PgUserForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER, ROLE.USER],
+                    nameKey: 'menu.user',
+                    popup: true,
+                },
+            },
+            {
+                path: 'login-history',
+                name: 'loginHistoryForm',
+                component: () => import('@/views/pages/System/PgLoginHistoryForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.loginHistory',
+                    popup: true,
+                },
+            },
             {
                 path: 'product',
                 name: 'productForm',
-                component: () => import('@/views/pages/Bmkoo/PgProductForm.vue'),
+                component: () => import('@/views/pages/System/PgProductForm.vue'),
                 meta: {
                     requiresAuth: true,
                     role: [ROLE.ADMIN, ROLE.MANAGER],
                     nameKey: 'menu.product',
+                    popup: true,
+                },
+            },
+            {
+                path: 'order-raw',
+                name: 'orderRawForm',
+                component: () => import('@/views/pages/System/PgOrderRawForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.orderRaw',
+                    popup: true,
+                },
+            },
+            {
+                path: 'channel',
+                name: 'channelForm',
+                component: () => import('@/views/pages/System/PgChannelForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.channel',
+                    popup: true,
+                },
+            },
+            {
+                path: 'order',
+                name: 'orderForm',
+                component: () => import('@/views/pages/System/PgOrderForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.order',
+                    popup: true,
+                },
+            },
+            {
+                path: 'order-item',
+                name: 'orderItemForm',
+                component: () => import('@/views/pages/System/PgOrderItemForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.orderItem',
                     popup: true,
                 },
             },
@@ -168,6 +258,9 @@ router.beforeEach((to, from, next) => {
 
     if (to.meta.requiresAuth) {
         if (!appStore.isLoggedIn) return next({ name: 'login' });
+
+        // 공통코드를 미리 불러둔다 (처음 한 번만 서버 호출, 팝업 창도 각자 한 번). 화면 전환은 기다리지 않는다
+        useCommonCodeStore().load();
 
         if (to.meta.role?.length > 0) {
             const allowed = appStore.userRoles.some((role) => to.meta.role.includes(role));

@@ -32,6 +32,17 @@
               v-model:value="form[f.data]"
               :disabled="isId(f)"
               :controls="false"
+              :formatter="isId(f) ? undefined : withComma"
+              :parser="isId(f) ? undefined : withoutComma"
+              style="width: 100%"
+            />
+            <!-- 공통코드 필드: 코드명으로 고르고 코드값으로 저장한다 -->
+            <a-select
+              v-else-if="f.type === 'code'"
+              v-model:value="form[f.data]"
+              :options="codeStore.options(f.codeGroup)"
+              :disabled="isId(f)"
+              allow-clear
               style="width: 100%"
             />
             <a-input v-else v-model:value="form[f.data]" :disabled="isId(f)" allow-clear />
@@ -48,10 +59,13 @@ import { getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'v
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs';
+import { useCommonCodeStore } from '@/store/commonCodeStore';
 import { FORM_CHANNEL, takeFormPayload } from './__POPUP_FILE__';
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
+/** 공통코드 (type: 'code' 필드의 선택 목록). 로그인 후 router 에서 미리 불러둔다 */
+const codeStore = useCommonCodeStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -77,6 +91,14 @@ let original = {};
 let channel = null;
 
 const isId = (f) => ID_FIELDS.includes(f.data);
+
+/** 숫자 입력칸 표시용 1000 단위 콤마 (소수부는 그대로). 저장 값은 parser 로 콤마를 뺀 숫자다 */
+const withComma = (value) => {
+  const [int, dec] = String(value ?? '').split('.');
+  const text = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return dec === undefined ? text : `${text}.${dec}`;
+};
+const withoutComma = (text) => String(text ?? '').replace(/,/g, '');
 
 /** 서버 날짜 값(ISO 문자열 / "yyyy-MM-dd HH:mm:ss" / [y, M, d, h, m, s] 배열 / epoch) → dayjs. 없거나 잘못되면 null */
 const toDate = (value) => {
