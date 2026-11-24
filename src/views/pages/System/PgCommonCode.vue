@@ -60,6 +60,8 @@
           style="width: 110px"
           @change="onPageSizeChange"
         />
+        <a-button size="small" @click="expandAll">{{ $t('common.expandAll') }}</a-button>
+        <a-button size="small" @click="collapseAll">{{ $t('common.collapseAll') }}</a-button>
         <div class="flex-1" />
         <span class="wms-search__label">{{ $t('field.sort') }}</span>
         <a-select v-model:value="search.sort1" :options="sortOptions" size="small" style="width: 150px" @change="onSortChange" />
@@ -67,8 +69,100 @@
       </div>
     </div>
 
-    <div ref="gridWrapRef" class="common-code-grid ht-theme-main">
-      <div ref="hotHostRef" class="common-code-grid__host" v-once />
+    <div class="common-code-tree">
+      <div class="common-code-tree__scroll">
+        <div class="common-code-tree__table" :style="{ '--tree-columns': treeColumnTemplate }">
+          <div class="common-code-tree__head-row is-group">
+            <span class="common-code-tree__cell common-code-tree__cell--name">
+              {{ $t('field.groupName') }}
+              <i class="common-code-tree__resizer" @pointerdown.prevent="startTreeColumnResize(0, $event)" />
+            </span>
+            <span class="common-code-tree__cell common-code-tree__cell--left">
+              {{ $t('field.groupCd') }}
+              <i class="common-code-tree__resizer" @pointerdown.prevent="startTreeColumnResize(1, $event)" />
+            </span>
+            <span v-for="n in 8" :key="`group-head-${n}`" class="common-code-tree__cell" />
+            <span class="common-code-tree__cell">{{ $t('field.codeCount') }}</span>
+          </div>
+          <div class="common-code-tree__head-row is-code">
+            <span
+              v-for="(header, index) in treeHeaders"
+              :key="header.key"
+              class="common-code-tree__cell"
+              :class="{ 'common-code-tree__cell--name': index === 0, 'common-code-tree__cell--remark': header.key === 'remark' }"
+            >
+              {{ header.label }}
+              <i
+                v-if="index < treeHeaders.length - 1"
+                class="common-code-tree__resizer"
+                @pointerdown.prevent="startTreeColumnResize(index, $event)"
+              />
+            </span>
+          </div>
+
+          <template v-if="pagedGroups.length">
+            <div v-for="group in pagedGroups" :key="group.groupCd" class="common-code-tree__group">
+              <div
+                role="button"
+                tabindex="0"
+                class="common-code-tree__row is-group"
+                @click="toggleGroup(group.groupCd)"
+                @keydown.enter.prevent="toggleGroup(group.groupCd)"
+              >
+                <span class="common-code-tree__cell common-code-tree__cell--name">
+                  <span class="common-code-tree__toggle">
+                    <CaretDownOutlined v-if="isExpanded(group.groupCd)" />
+                    <CaretRightOutlined v-else />
+                  </span>
+                  <FolderOpenOutlined v-if="isExpanded(group.groupCd)" class="common-code-tree__icon is-folder" />
+                  <FolderOutlined v-else class="common-code-tree__icon is-folder" />
+                  <span class="ellipsis" :title="group.groupNm">{{ group.groupNm }}</span>
+                </span>
+                <span class="common-code-tree__cell common-code-tree__cell--left" :title="group.groupCd">{{ group.groupCd }}</span>
+                <span v-for="n in 8" :key="`group-cell-${n}`" class="common-code-tree__cell" />
+                <span class="common-code-tree__cell">{{ group.items.length }}</span>
+              </div>
+
+              <template v-if="isExpanded(group.groupCd)">
+                <div
+                  v-for="item in group.items"
+                  :key="`${group.groupCd}::${item.code}`"
+                  class="common-code-tree__row is-item"
+                >
+                  <span class="common-code-tree__cell common-code-tree__cell--name">
+                    <TagsOutlined class="common-code-tree__icon is-item" />
+                    <a
+                      href="#"
+                      class="common-code-tree__name-link ellipsis"
+                      :title="codeNameOf(item)"
+                      @click.prevent="openForm(group)"
+                    >
+                      {{ codeNameOf(item) }}
+                    </a>
+                  </span>
+                  <span class="common-code-tree__cell" />
+                  <span class="common-code-tree__cell" :title="item.code">{{ item.code }}</span>
+                  <span class="common-code-tree__cell">{{ item.sort }}</span>
+                  <span class="common-code-tree__cell" :title="item.data1">{{ item.data1 }}</span>
+                  <span class="common-code-tree__cell" :title="item.data2">{{ item.data2 }}</span>
+                  <span class="common-code-tree__cell" :title="item.data3">{{ item.data3 }}</span>
+                  <span class="common-code-tree__cell" :title="String(item.data4 ?? '')">{{ item.data4 }}</span>
+                  <span class="common-code-tree__cell" :title="String(item.data5 ?? '')">{{ item.data5 }}</span>
+                  <span class="common-code-tree__cell common-code-tree__cell--remark" :title="item.remark">{{ item.remark }}</span>
+                  <span class="common-code-tree__cell" />
+                </div>
+                <div v-if="!group.items.length" class="common-code-tree__empty">{{ $t('common.noData') }}</div>
+              </template>
+            </div>
+          </template>
+          <a-empty
+            v-else
+            class="common-code-tree__empty-state"
+            :image="Empty.PRESENTED_IMAGE_SIMPLE"
+            :description="$t('common.noData')"
+          />
+        </div>
+      </div>
     </div>
 
     <div class="common-code-pager">
@@ -94,13 +188,10 @@
 
 <script setup>
 // 이 파일은 scripts/genPage.mjs 가 CommonCode.java 에서 생성했다. (템플릿: scripts/templates/PgEntity.vue.tpl)
-import { computed, getCurrentInstance, markRaw, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { message } from 'ant-design-vue';
+import { Empty, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
-import Handsontable from 'handsontable';
-import 'handsontable/styles/handsontable.css';
-import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
 import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './commonCodePopup';
 
@@ -120,8 +211,7 @@ const FIELDS = [
   { data: 'groupCd', type: 'text', className: '', width: 220 },
   { data: 'groupNm', type: 'text', className: '', width: 220 },
   { data: 'code', type: 'text', className: '', width: 220 },
-  { data: 'nameKo', type: 'text', className: '', width: 120 },
-  { data: 'nameEn', type: 'text', className: '', width: 120 },
+  { data: 'name', type: 'text', className: '', width: 120 },
   { data: 'sort', type: 'number', className: 'htRight', width: 90 },
   { data: 'data1', type: 'text', className: '', width: 220 },
   { data: 'data2', type: 'text', className: '', width: 220 },
@@ -131,12 +221,52 @@ const FIELDS = [
   { data: 'remark', type: 'text', className: '', width: 220 },
 ];
 
-const gridWrapRef = ref(null);
-const hotHostRef = ref(null);
 const filtered = ref([]);
+const expandedIds = ref([]);
+const treeColumnWidths = ref([250, 250, 160, 90, 140, 140, 140, 90, 90, 180, 70]);
+const treeColumnTemplate = computed(() => treeColumnWidths.value.map((width) => `${width}px`).join(' '));
+let treeResizeCleanup = null;
 
-let hot = null;
-const activeRange = { start: -1, end: -1 };
+const treeHeaders = computed(() => [
+  { key: 'name', label: t('field.name') },
+  { key: 'groupCd', label: '' },
+  { key: 'code', label: t('field.code') },
+  { key: 'sort', label: t('field.sort') },
+  { key: 'data1', label: t('field.data1') },
+  { key: 'data2', label: t('field.data2') },
+  { key: 'data3', label: t('field.data3') },
+  { key: 'data4', label: t('field.data4') },
+  { key: 'data5', label: t('field.data5') },
+  { key: 'remark', label: t('field.remark') },
+  { key: 'count', label: '' },
+]);
+
+const startTreeColumnResize = (index, event) => {
+  treeResizeCleanup?.();
+  const startX = event.clientX;
+  const startWidth = treeColumnWidths.value[index];
+
+  const onMove = (moveEvent) => {
+    treeColumnWidths.value[index] = Math.max(60, startWidth + moveEvent.clientX - startX);
+  };
+  const onUp = () => treeResizeCleanup?.();
+
+  treeResizeCleanup = () => {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    window.removeEventListener('blur', onUp);
+    document.body.style.removeProperty('cursor');
+    document.body.style.removeProperty('user-select');
+    treeResizeCleanup = null;
+  };
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+  window.addEventListener('blur', onUp);
+};
 
 /** 정렬 값은 "<필드>:asc" / "<필드>:desc" */
 const DEFAULT_SEARCH = {
@@ -182,6 +312,45 @@ const pageNumbers = computed(() => {
   for (let i = start; i <= end; i += 1) list.push(i);
   return list;
 });
+
+const codeNameOf = (row) => row?.name || row?.nameKo || row?.nameEn || '';
+
+const groupedRows = computed(() => {
+  const groups = new Map();
+  filtered.value.forEach((row) => {
+    const groupCd = String(row.groupCd || '');
+    if (!groups.has(groupCd)) {
+      groups.set(groupCd, {
+        groupCd,
+        groupNm: row.groupNm || groupCd,
+        items: [],
+      });
+    }
+    groups.get(groupCd).items.push(row);
+  });
+  return [...groups.values()];
+});
+
+const pagedGroups = computed(() => {
+  const start = (page.current - 1) * search.pageSize;
+  return groupedRows.value.slice(start, start + search.pageSize);
+});
+
+const isExpanded = (groupCd) => expandedIds.value.includes(groupCd);
+
+const toggleGroup = (groupCd) => {
+  expandedIds.value = isExpanded(groupCd)
+    ? expandedIds.value.filter((id) => id !== groupCd)
+    : [...expandedIds.value, groupCd];
+};
+
+const expandAll = () => {
+  expandedIds.value = groupedRows.value.map((group) => group.groupCd);
+};
+
+const collapseAll = () => {
+  expandedIds.value = [];
+};
 
 const FIELD_TYPE = Object.fromEntries(FIELDS.map((f) => [f.data, f.type]));
 
@@ -274,21 +443,8 @@ const decorate = (rows, startNo) =>
     FIELDS.forEach((f) => {
       if (f.type === 'date') view[f.data] = toDate(row[f.data])?.format('YYYY-MM-DD HH:mm:ss') ?? '';
     });
-    return markRaw(view);
+    return view;
   });
-
-const getHot = () => (hot && !hot.isDestroyed ? hot : null);
-
-const onAfterSelection = function (row, _col, row2) {
-  activeRange.start = row < 0 ? -1 : Math.min(row, row2);
-  activeRange.end = row < 0 ? -1 : Math.max(row, row2);
-};
-
-/** 순번 셀은 상세 팝업 링크로 보이게 한다 */
-const seqRenderer = function (instance, td, row, col, prop, value, cellProperties) {
-  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
-  td.classList.add('common-code-seq-link');
-};
 
 const idOf = (row) => ID_FIELDS.map((key) => encodeURIComponent(String(row?.[key] ?? ''))).join(',');
 
@@ -310,80 +466,12 @@ const openForm = (row) => {
   if (!popup) message.warning(t('message.popupBlocked'));
 };
 
-/** Handsontable 선택 시작보다 먼저 가로채서, 순번 클릭 시 드래그 선택 없이 팝업만 연다 */
-const onGridMouseDownCapture = (event) => {
-  if (event.button !== 0) return;
-  const td = event.target?.closest?.('td');
-  if (!td || !td.classList.contains('common-code-seq-link') || !gridWrapRef.value?.contains(td)) return;
-
-  event.preventDefault();
-  event.stopPropagation();
-  event.isImmediatePropagationEnabled = false;
-
-  const instance = getHot();
-  const coords = instance?.getCoords(td);
-  if (!coords || coords.row < 0) return;
-  openForm(instance.getSourceDataAtRow(coords.row));
-};
-
-const createGrid = () => {
-  const host = hotHostRef.value;
-  if (!host || getHot()) return;
-
-  hot = markRaw(
-    new Handsontable(host, {
-      themeName: 'ht-theme-main',
-      data: [],
-      colHeaders: [t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
-      columns: [
-        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: seqRenderer },
-        ...FIELDS.map((f) => ({ data: f.data, className: f.className, readOnly: true, editor: false })),
-      ],
-      colWidths: [50, ...FIELDS.map((f) => f.width)],
-      height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
-      width: '100%',
-      stretchH: 'all',
-      rowHeaders: false,
-      manualColumnResize: true,
-      fillHandle: false,
-      imeFastEdit: false,
-      autoRowSize: false,
-      autoColumnSize: false,
-      readOnly: true,
-      licenseKey: 'non-commercial-and-evaluation',
-      beforeRenderer(td, row) {
-        if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
-          td.classList.add('active-row-cell');
-        } else {
-          td.classList.remove('active-row-cell');
-        }
-      },
-      beforeBeginEditing() {
-        return false;
-      },
-      afterSelection: onAfterSelection,
-    })
-  );
-
-  gridWrapRef.value?.addEventListener('mousedown', onGridMouseDownCapture, true);
-};
-
-const destroyGrid = () => {
-  gridWrapRef.value?.removeEventListener('mousedown', onGridMouseDownCapture, true);
-  if (hot && !hot.isDestroyed) hot.destroy();
-  hot = null;
-};
-
 const renderPage = () => {
   const size = search.pageSize;
-  const totalPages = Math.max(1, Math.ceil(filtered.value.length / size));
+  const totalPages = Math.max(1, Math.ceil(groupedRows.value.length / size));
   if (page.current > totalPages) page.current = totalPages;
-  page.total = filtered.value.length;
+  page.total = groupedRows.value.length;
   page.totalPages = totalPages;
-  const start = (page.current - 1) * size;
-  getHot()?.loadData(decorate(filtered.value.slice(start, start + size), start + 1));
-  activeRange.start = -1;
-  activeRange.end = -1;
 };
 
 const onSearch = async () => {
@@ -441,21 +529,8 @@ const onOpenWindow = () => {
 
 const onPrint = () => window.print();
 
-const measureGrid = () => {
-  const el = gridWrapRef.value;
-  const instance = getHot();
-  if (!el || !instance) return;
-  const next = Math.max(120, el.clientHeight);
-  if (instance.getSettings().height === next) return;
-  instance.updateSettings({ height: next });
-};
-
 onMounted(() => {
-  destroyGrid();
-  createGrid();
-  measureGrid();
   onSearch();
-  window.addEventListener('resize', measureGrid);
   window.addEventListener('message', onFormMessage);
   if ('BroadcastChannel' in window) {
     formChannel = new BroadcastChannel(FORM_CHANNEL);
@@ -463,17 +538,11 @@ onMounted(() => {
   }
 });
 
-onActivated(() => {
-  measureGrid();
-  getHot()?.refreshDimensions();
-});
-
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', measureGrid);
+  treeResizeCleanup?.();
   window.removeEventListener('message', onFormMessage);
   formChannel?.close();
   formChannel = null;
-  destroyGrid();
 });
 </script>
 
@@ -595,43 +664,173 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.common-code-grid {
+.common-code-tree {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  position: relative;
-  --ht-header-background-color: #d6e7f5;
-  --ht-header-foreground-color: #1e4e79;
-  --ht-header-font-weight: 700;
-  --ht-cell-horizontal-border-color: #c5d8ea;
-  --ht-cell-vertical-border-color: #c5d8ea;
 }
 
-.common-code-grid__host {
-  height: 100%;
+.common-code-tree__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #8aafcc;
+  background: #fff;
 }
 
-.common-code-grid :deep(.active-row-cell) {
-  background: #d9edf7 !important;
+.common-code-tree__table {
+  display: grid;
+  grid-template-columns: var(--tree-columns);
+  align-content: start;
+  min-width: 1450px;
 }
 
-.common-code-grid :deep(.ht_clone_top th) {
-  background: #d6e7f5;
+.common-code-tree__group {
+  display: contents;
+}
+
+.common-code-tree__head-row,
+.common-code-tree__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.common-code-tree__head-row {
+  position: sticky;
+  z-index: 2;
   color: #1e4e79;
   font-weight: 700;
 }
 
-.common-code-grid :deep(.wtBorder) {
-  pointer-events: none;
+.common-code-tree__head-row.is-group {
+  top: 0;
+  background: #c5ddf0;
+  border-bottom: 1px solid #b7d0e6;
 }
 
-.common-code-grid :deep(td.common-code-seq-link) {
-  color: #1e5aa8;
-  text-decoration: underline;
+.common-code-tree__head-row.is-code {
+  top: 28px;
+  background: #d6e7f5;
+  border-bottom: 1px solid #c5d8ea;
+}
+
+.common-code-tree__head-row .common-code-tree__cell--name {
+  padding-left: 48px;
+}
+
+.common-code-tree__row {
+  border-bottom: 1px solid #e4eef6;
+  background: #fff;
+  color: var(--wms-text);
   cursor: pointer;
 }
 
-.common-code-grid :deep(td.common-code-seq-link:hover) {
-  color: #c41d3a !important;
+.common-code-tree__row.is-group {
+  background: #f7fbfe;
+  font-weight: 700;
+  border-top: 1px solid #5d87ab;
+}
+
+.common-code-tree__row.is-item {
+  cursor: default;
+}
+
+.common-code-tree__row.is-item .common-code-tree__cell--name {
+  padding-left: 28px;
+}
+
+.common-code-tree__row:hover {
+  background: #e8f1f8;
+}
+
+.common-code-tree__cell {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 6px;
+  border-right: 1px solid #d6e3ed;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.common-code-tree__resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 8px;
+  border-right: 2px solid #6f9abd;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.common-code-tree__resizer:hover {
+  border-right-color: #174f82;
+}
+
+.common-code-tree__head-row .common-code-tree__cell:first-child,
+.common-code-tree__row .common-code-tree__cell:first-child {
+  border-left: 1px solid #d6e3ed;
+}
+
+.common-code-tree__cell--name,
+.common-code-tree__cell--left,
+.common-code-tree__cell--remark {
+  text-align: left;
+}
+
+.common-code-tree__cell--name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.common-code-tree__name-link {
+  min-width: 0;
+  color: #1a5fad;
+  text-decoration: underline;
+}
+
+.common-code-tree__name-link:hover {
+  color: #0d3f78;
+}
+
+.common-code-tree__toggle {
+  display: inline-flex;
+  width: 16px;
+  color: #3d6d99;
+}
+
+.common-code-tree__icon {
+  flex: 0 0 auto;
+  font-size: 14px;
+}
+
+.common-code-tree__icon.is-folder {
+  color: #c9a227;
+}
+
+.common-code-tree__icon.is-item {
+  color: #3d6d99;
+}
+
+.common-code-tree__empty {
+  grid-column: 1 / -1;
+  padding: 6px 8px 6px 52px;
+  color: var(--wms-text-sub);
+  font-size: 12px;
+}
+
+.common-code-tree__empty-state {
+  grid-column: 1 / -1;
 }
 
 .common-code-pager {
@@ -689,11 +888,9 @@ onBeforeUnmount(() => {
     display: none !important;
   }
 
-  .common-code-page {
+  .common-code-page,
+  .common-code-tree__scroll {
     height: auto;
-  }
-
-  .common-code-grid {
     overflow: visible;
   }
 }
