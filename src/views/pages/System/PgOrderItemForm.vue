@@ -1,8 +1,8 @@
 <template>
-  <div class="product-form">
-    <div class="product-form__toolbar">
-      <div class="product-form__title">※ {{ $t('menu.product') }}</div>
-      <div class="product-form__actions">
+  <div class="order-item-form">
+    <div class="order-item-form__toolbar">
+      <div class="order-item-form__title">※ {{ $t('menu.orderItem') }}</div>
+      <div class="order-item-form__actions">
         <a-button type="primary" size="small" :loading="saving" :disabled="loading" @click="onSave">
           <template #icon><SaveOutlined /></template>
           {{ $t('common.save') }}
@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <div class="product-form__body">
+    <div class="order-item-form__body">
       <a-spin :spinning="loading">
         <a-form :label-col="{ span: 8 }" :wrapper-col="{ span: 15 }">
           <a-form-item v-for="f in FIELDS" :key="f.data" :label="$t(`field.${f.data}`)">
@@ -32,6 +32,17 @@
               v-model:value="form[f.data]"
               :disabled="isId(f)"
               :controls="false"
+              :formatter="isId(f) ? undefined : withComma"
+              :parser="isId(f) ? undefined : withoutComma"
+              style="width: 100%"
+            />
+            <!-- 공통코드 필드: 코드명으로 고르고 코드값으로 저장한다 -->
+            <a-select
+              v-else-if="f.type === 'code'"
+              v-model:value="form[f.data]"
+              :options="codeStore.options(f.codeGroup)"
+              :disabled="isId(f)"
+              allow-clear
               style="width: 100%"
             />
             <a-input v-else v-model:value="form[f.data]" :disabled="isId(f)" allow-clear />
@@ -43,56 +54,42 @@
 </template>
 
 <script setup>
-// 이 파일은 scripts/genPage.mjs 가 Product.java 에서 생성했다. (템플릿: scripts/templates/PgEntityForm.vue.tpl)
+// 이 파일은 scripts/genPage.mjs 가 OrderItem.java 에서 생성했다. (템플릿: scripts/templates/PgEntityForm.vue.tpl)
 import { getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs';
-import { FORM_CHANNEL, takeFormPayload } from './productPopup';
+import { useCommonCodeStore } from '@/store/commonCodeStore';
+import { FORM_CHANNEL, takeFormPayload } from './orderItemPopup';
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
+/** 공통코드 (type: 'code' 필드의 선택 목록). 로그인 후 router 에서 미리 불러둔다 */
+const codeStore = useCommonCodeStore();
 const route = useRoute();
 const router = useRouter();
 
-defineOptions({ name: 'PgProductForm' });
+defineOptions({ name: 'PgOrderItemForm' });
 
-/** 단건 조회 API: apiFunctions.onApiGetProduct(id) → GET v1/product/{id} */
-const getApi = (id) => proxy.$api.onApiGetProduct(id);
-/** 저장 API: apiFunctions.onApiSaveProduct(data) → POST v1/product/save */
-const saveApi = (data) => proxy.$api.onApiSaveProduct(data);
+/** 단건 조회 API: apiFunctions.onApiGetOrderItemList(id) → GET v1/orderItem/{id} */
+const getApi = (id) => proxy.$api.onApiGetOrderItemList(id);
+/** 저장 API: apiFunctions.onApiSaveOrderItem(data) → POST v1/orderItem/save */
+const saveApi = (data) => proxy.$api.onApiSaveOrderItem(data);
 
 /** 날짜 필드의 format 은 서버(Jackson ISO_LOCAL_DATE_TIME / ISO_LOCAL_DATE)로 보낼 형식이다 */
 const FIELDS = [
+  { data: 'orderId', type: 'number', className: 'htRight', width: 90, id: true },
+  { data: 'lineNo', type: 'number', className: 'htRight', width: 90, id: true },
+  { data: 'recipientNm', type: 'text', className: '', width: 120 },
   { data: 'productCd', type: 'text', className: '', width: 120 },
   { data: 'productNm', type: 'text', className: '', width: 220 },
-  { data: 'barcode', type: 'text', className: '', width: 220 },
-  { data: 'barcodeBox', type: 'text', className: '', width: 220 },
-  { data: 'qtyBox', type: 'number', className: 'htRight', width: 90 },
-  { data: 'brandCd', type: 'text', className: '', width: 120 },
-  { data: 'category1Cd', type: 'text', className: '', width: 120 },
-  { data: 'category2Cd', type: 'text', className: '', width: 120 },
-  { data: 'costPrice', type: 'number', className: 'htRight', width: 90 },
-  { data: 'salePrice', type: 'number', className: 'htRight', width: 90 },
-  { data: 'supplierId', type: 'text', className: '', width: 120 },
-  { data: 'memo', type: 'text', className: '', width: 220 },
-  { data: 'memoUpdatedAt', type: 'date', className: 'htCenter', width: 140, format: 'YYYY-MM-DDTHH:mm:ss' },
-  { data: 'saleTypeCd', type: 'text', className: '', width: 90 },
+  { data: 'qty', type: 'number', className: 'htRight', width: 90 },
   { data: 'deliveryStatus', type: 'text', className: '', width: 90 },
-  { data: 'productStatusCd', type: 'text', className: '', width: 90 },
-  { data: 'stockStatusCd', type: 'text', className: '', width: 90 },
-  { data: 'setYn', type: 'text', className: '', width: 90 },
-  { data: 'locationWh', type: 'text', className: '', width: 120 },
-  { data: 'locationL', type: 'text', className: '', width: 120 },
-  { data: 'locationM', type: 'text', className: '', width: 120 },
-  { data: 'locationS', type: 'text', className: '', width: 120 },
-  { data: 'imageL', type: 'text', className: '', width: 220 },
-  { data: 'imageM', type: 'text', className: '', width: 220 },
-  { data: 'imageS', type: 'text', className: '', width: 220 },
-  { data: 'productDesc', type: 'text', className: '', width: 220 },
+  { data: 'shippingNo', type: 'text', className: '', width: 120 },
+  { data: 'isAssign', type: 'text', className: '', width: 90 },
 ];
 
-const ID_FIELDS = ['productCd'];
+const ID_FIELDS = ['orderId', 'lineNo'];
 
 const form = reactive({});
 const loading = ref(false);
@@ -102,6 +99,14 @@ let original = {};
 let channel = null;
 
 const isId = (f) => ID_FIELDS.includes(f.data);
+
+/** 숫자 입력칸 표시용 1000 단위 콤마 (소수부는 그대로). 저장 값은 parser 로 콤마를 뺀 숫자다 */
+const withComma = (value) => {
+  const [int, dec] = String(value ?? '').split('.');
+  const text = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return dec === undefined ? text : `${text}.${dec}`;
+};
+const withoutComma = (text) => String(text ?? '').replace(/,/g, '');
 
 /** 서버 날짜 값(ISO 문자열 / "yyyy-MM-dd HH:mm:ss" / [y, M, d, h, m, s] 배열 / epoch) → dayjs. 없거나 잘못되면 null */
 const toDate = (value) => {
@@ -152,7 +157,7 @@ const load = async () => {
 
 /** 목록 창에 저장을 알린다 (목록은 다시 조회한다) */
 const notifySaved = (row) => {
-  const payload = { type: 'product-saved', row };
+  const payload = { type: 'orderItem-saved', row };
   if (channel) {
     channel.postMessage(payload);
     return;
@@ -179,11 +184,11 @@ const onSave = async () => {
 
 const onClose = () => {
   window.close();
-  if (!window.closed && !window.opener) router.push({ name: 'product' });
+  if (!window.closed && !window.opener) router.push({ name: 'orderItem' });
 };
 
 onMounted(() => {
-  document.title = t('menu.product');
+  document.title = t('menu.orderItem');
   if ('BroadcastChannel' in window) channel = new BroadcastChannel(FORM_CHANNEL);
   load();
 });
@@ -194,14 +199,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.product-form {
+.order-item-form {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: #fff;
 }
 
-.product-form__toolbar {
+.order-item-form__toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -211,26 +216,26 @@ onBeforeUnmount(() => {
   background: #f7f8fa;
 }
 
-.product-form__title {
+.order-item-form__title {
   font-size: 13px;
   font-weight: 700;
   color: #1e4e79;
   white-space: nowrap;
 }
 
-.product-form__actions {
+.order-item-form__actions {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
 }
 
-.product-form__body {
+.order-item-form__body {
   padding: 16px 8px 8px;
   overflow: auto;
 }
 
-.product-form__body :deep(.ant-form-item) {
+.order-item-form__body :deep(.ant-form-item) {
   margin-bottom: 8px;
 }
 </style>

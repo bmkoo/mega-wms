@@ -1,42 +1,42 @@
 <template>
-  <div class="product-page">
-    <div class="product-toolbar">
-      <div class="product-toolbar__title">※ {{ $t('menu.product') }}</div>
-      <div class="product-toolbar__actions">
+  <div class="error-log-page">
+    <div class="error-log-toolbar">
+      <div class="error-log-toolbar__title">※ {{ $t('menu.errorLog') }}</div>
+      <div class="error-log-toolbar__actions">
         <a-button size="small" @click="onSearch">
           <template #icon><SearchOutlined /></template>
           {{ $t('common.search') }}
         </a-button>
       </div>
-      <div class="product-toolbar__utils">
+      <div class="error-log-toolbar__utils">
         <a-tooltip :title="$t('common.excelDownload')">
-          <button type="button" class="product-icon-btn product-icon-btn--excel" @click="onExcel">
+          <button type="button" class="error-log-icon-btn error-log-icon-btn--excel" @click="onExcel">
             <FileExcelOutlined />
           </button>
         </a-tooltip>
         <a-tooltip :title="$t('common.reset')">
-          <button type="button" class="product-icon-btn" @click="onReset">
+          <button type="button" class="error-log-icon-btn" @click="onReset">
             <UndoOutlined />
           </button>
         </a-tooltip>
         <a-tooltip :title="$t('common.openNewWindow')">
-          <button type="button" class="product-icon-btn" @click="onOpenWindow">
+          <button type="button" class="error-log-icon-btn" @click="onOpenWindow">
             <DesktopOutlined />
           </button>
         </a-tooltip>
         <a-tooltip :title="$t('common.printPreview')">
-          <button type="button" class="product-icon-btn" @click="onPrint">
+          <button type="button" class="error-log-icon-btn" @click="onPrint">
             <PrinterOutlined />
           </button>
         </a-tooltip>
       </div>
     </div>
 
-    <div class="product-search">
+    <div class="error-log-search">
       <!-- 엔티티 필드마다 검색 조건 1개, 한 행에 4개씩. 문자열=부분일치 / 날짜=기간 / 숫자=최소~최대 -->
-      <div class="product-search__grid">
-        <div v-for="f in FIELDS" :key="f.data" class="product-search__item">
-          <span class="product-search__label" :title="$t(`field.${f.data}`)">{{ $t(`field.${f.data}`) }}</span>
+      <div class="error-log-search__grid">
+        <div v-for="f in FIELDS" :key="f.data" class="error-log-search__item">
+          <span class="error-log-search__label" :title="$t(`field.${f.data}`)">{{ $t(`field.${f.data}`) }}</span>
           <a-range-picker
             v-if="f.type === 'date'"
             v-model:value="cond[f.data]"
@@ -44,7 +44,7 @@
             format="YYYY-MM-DD"
             class="flex-1"
           />
-          <div v-else-if="f.type === 'number'" class="product-search__range">
+          <div v-else-if="f.type === 'number'" class="error-log-search__range">
             <a-input-number v-model:value="cond[f.data].min" size="small" :controls="false" @press-enter="onSearch" />
             <span>~</span>
             <a-input-number v-model:value="cond[f.data].max" size="small" :controls="false" @press-enter="onSearch" />
@@ -52,7 +52,7 @@
           <a-input v-else v-model:value="cond[f.data]" size="small" class="flex-1" allow-clear @press-enter="onSearch" />
         </div>
       </div>
-      <div class="product-search__row">
+      <div class="error-log-search__row">
         <a-select
           v-model:value="search.pageSize"
           :options="pageSizeOptions"
@@ -67,12 +67,12 @@
       </div>
     </div>
 
-    <div ref="gridWrapRef" class="product-grid ht-theme-main">
-      <div ref="hotHostRef" class="product-grid__host" v-once />
+    <div ref="gridWrapRef" class="error-log-grid ht-theme-main">
+      <div ref="hotHostRef" class="error-log-grid__host" v-once />
     </div>
 
-    <div class="product-pager">
-      <div class="product-pager__nav">
+    <div class="error-log-pager">
+      <div class="error-log-pager__nav">
         <button type="button" :disabled="page.current <= 1" @click="goPage(1)">«</button>
         <button type="button" :disabled="page.current <= 1" @click="goPage(page.current - 1)">‹</button>
         <button
@@ -87,13 +87,13 @@
         <button type="button" :disabled="page.current >= page.totalPages" @click="goPage(page.current + 1)">›</button>
         <button type="button" :disabled="page.current >= page.totalPages" @click="goPage(page.totalPages)">»</button>
       </div>
-      <span class="product-pager__total">{{ $t('common.totalItems', { n: $cf.fncComma(page.total) }) }}</span>
+      <span class="error-log-pager__total">{{ $t('common.totalItems', { n: $cf.fncComma(page.total) }) }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
-// 이 파일은 scripts/genPage.mjs 가 Product.java 에서 생성했다. (템플릿: scripts/templates/PgEntity.vue.tpl)
+// 이 파일은 scripts/genPage.mjs 가 ErrorLog.java 에서 생성했다. (템플릿: scripts/templates/PgEntity.vue.tpl)
 import { computed, getCurrentInstance, markRaw, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
@@ -102,48 +102,35 @@ import Handsontable from 'handsontable';
 import 'handsontable/styles/handsontable.css';
 import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
-import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './productPopup';
+import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './errorLogPopup';
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
 
-defineOptions({ name: 'PgProduct' });
+defineOptions({ name: 'PgErrorLog' });
 
-/** 조회 API: apiFunctions.v1/productList() → GET v1/product */
-const queryApi = (params) => proxy.$api.onApiGetProductList(params);
+/** 조회 API: apiFunctions.onApiQueryErrorLog() → GET v1/errorLog */
+const queryApi = (params) => proxy.$api.onApiQueryErrorLog(params);
 
-/** 상세 팝업에 넘길 id 를 만드는 @Id 필드. 여러 개면 "값1,값2" 로 이어 붙여 한 구간으로 보낸다 (GET v1/product/{id}) */
-const ID_FIELDS = ['productCd'];
+/** 상세 팝업에 넘길 id 를 만드는 @Id 필드. 여러 개면 "값1,값2" 로 이어 붙여 한 구간으로 보낸다 (GET v1/errorLog/{id}) */
+const ID_FIELDS = ['id'];
 
 /** 엔티티 필드 → 그리드 컬럼 (헤더는 i18n field.<data>) */
 const FIELDS = [
-  { data: 'productCd', type: 'text', className: '', width: 120 },
-  { data: 'productNm', type: 'text', className: '', width: 220 },
-  { data: 'barcode', type: 'text', className: '', width: 220 },
-  { data: 'barcodeBox', type: 'text', className: '', width: 220 },
-  { data: 'qtyBox', type: 'number', className: 'htRight', width: 90 },
-  { data: 'brandCd', type: 'text', className: '', width: 120 },
-  { data: 'category1Cd', type: 'text', className: '', width: 120 },
-  { data: 'category2Cd', type: 'text', className: '', width: 120 },
-  { data: 'costPrice', type: 'number', className: 'htRight', width: 90 },
-  { data: 'salePrice', type: 'number', className: 'htRight', width: 90 },
-  { data: 'supplierId', type: 'text', className: '', width: 120 },
-  { data: 'memo', type: 'text', className: '', width: 220 },
-  { data: 'memoUpdatedAt', type: 'date', className: 'htCenter', width: 140, format: 'YYYY-MM-DDTHH:mm:ss' },
-  { data: 'saleTypeCd', type: 'text', className: '', width: 90 },
-  { data: 'deliveryStatus', type: 'text', className: '', width: 90 },
-  { data: 'productStatusCd', type: 'text', className: '', width: 90 },
-  { data: 'stockStatusCd', type: 'text', className: '', width: 90 },
-  { data: 'setYn', type: 'text', className: '', width: 90 },
-  { data: 'locationWh', type: 'text', className: '', width: 120 },
-  { data: 'locationL', type: 'text', className: '', width: 120 },
-  { data: 'locationM', type: 'text', className: '', width: 120 },
-  { data: 'locationS', type: 'text', className: '', width: 120 },
-  { data: 'imageL', type: 'text', className: '', width: 220 },
-  { data: 'imageM', type: 'text', className: '', width: 220 },
-  { data: 'imageS', type: 'text', className: '', width: 220 },
-  { data: 'productDesc', type: 'text', className: '', width: 220 },
+  { data: 'id', type: 'number', className: 'htRight', width: 90 },
+  { data: 'phase', type: 'text', className: '', width: 90 },
+  { data: 'system', type: 'text', className: '', width: 120 },
+  { data: 'loggerName', type: 'text', className: '', width: 220 },
+  { data: 'serverName', type: 'text', className: '', width: 120 },
+  { data: 'hostName', type: 'text', className: '', width: 120 },
+  { data: 'path', type: 'text', className: '', width: 220 },
+  { data: 'message', type: 'text', className: '', width: 120 },
+  { data: 'trace', type: 'text', className: '', width: 120 },
+  { data: 'headerMap', type: 'text', className: '', width: 120 },
+  { data: 'parameterMap', type: 'text', className: '', width: 120 },
+  { data: 'userInfo', type: 'text', className: '', width: 120 },
 ];
+
 
 const gridWrapRef = ref(null);
 const hotHostRef = ref(null);
@@ -155,7 +142,7 @@ const activeRange = { start: -1, end: -1 };
 /** 정렬 값은 "<필드>:asc" / "<필드>:desc" */
 const DEFAULT_SEARCH = {
   pageSize: 20,
-  sort1: 'memoUpdatedAt:desc',
+  sort1: 'id:asc',
   sort2: '',
 };
 
@@ -301,7 +288,7 @@ const onAfterSelection = function (row, _col, row2) {
 /** 순번 셀은 상세 팝업 링크로 보이게 한다 */
 const seqRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
-  td.classList.add('product-seq-link');
+  td.classList.add('error-log-seq-link');
 };
 
 const idOf = (row) => ID_FIELDS.map((key) => encodeURIComponent(String(row?.[key] ?? ''))).join(',');
@@ -311,7 +298,7 @@ let formChannel = null;
 /** 상세 팝업에서 저장하면 목록을 다시 조회한다 */
 const onFormMessage = (event) => {
   if (event.origin && event.origin !== window.location.origin) return;
-  if (event.data?.type !== 'product-saved') return;
+  if (event.data?.type !== 'errorLog-saved') return;
   message.success(t('message.saved'));
   onSearch();
 };
@@ -328,7 +315,7 @@ const openForm = (row) => {
 const onGridMouseDownCapture = (event) => {
   if (event.button !== 0) return;
   const td = event.target?.closest?.('td');
-  if (!td || !td.classList.contains('product-seq-link') || !gridWrapRef.value?.contains(td)) return;
+  if (!td || !td.classList.contains('error-log-seq-link') || !gridWrapRef.value?.contains(td)) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -445,7 +432,7 @@ const onExcel = () => {
       { title: t('field.seq'), dataIndex: 'no' },
       ...FIELDS.map((f) => ({ title: t(`field.${f.data}`), dataIndex: f.data })),
     ],
-    `${t('menu.product')}_${dayjs().format('YYYYMMDD')}.xlsx`
+    `${t('menu.errorLog')}_${dayjs().format('YYYYMMDD')}.xlsx`
   );
 };
 
@@ -492,7 +479,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.product-page {
+.error-log-page {
   display: flex;
   flex-direction: column;
   height: calc(
@@ -503,7 +490,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.product-toolbar {
+.error-log-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -513,21 +500,21 @@ onBeforeUnmount(() => {
   background: #f7f8fa;
 }
 
-.product-toolbar__title {
+.error-log-toolbar__title {
   font-size: 13px;
   font-weight: 700;
   color: #1e4e79;
   white-space: nowrap;
 }
 
-.product-toolbar__actions {
+.error-log-toolbar__actions {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
 }
 
-.product-toolbar__utils {
+.error-log-toolbar__utils {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -536,7 +523,7 @@ onBeforeUnmount(() => {
   border-left: 1px solid var(--wms-border);
 }
 
-.product-icon-btn {
+.error-log-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -551,15 +538,15 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.product-icon-btn:hover {
+.error-log-icon-btn:hover {
   background: #e8f1f8;
 }
 
-.product-icon-btn--excel {
+.error-log-icon-btn--excel {
   color: #217346;
 }
 
-.product-search {
+.error-log-search {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -568,26 +555,26 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--wms-border);
 }
 
-.product-search__row {
+.error-log-search__row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.product-search__grid {
+.error-log-search__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px 16px;
 }
 
-.product-search__item {
+.error-log-search__item {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
 }
 
-.product-search__label {
+.error-log-search__label {
   flex: 0 0 96px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -596,7 +583,7 @@ onBeforeUnmount(() => {
   color: var(--wms-text);
 }
 
-.product-search__range {
+.error-log-search__range {
   display: flex;
   flex: 1;
   align-items: center;
@@ -604,15 +591,22 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-.product-search__range :deep(.ant-input-number) {
+.error-log-search__range :deep(.ant-input-number) {
   flex: 1;
   min-width: 0;
 }
 
-.product-grid {
+.error-log-grid {
   flex: 1;
   min-height: 0;
   position: relative;
+  /*
+   * 행 높이 = --ht-line-height + 2 × --ht-cell-vertical-padding + 테두리 1px
+   * 기본 테마: 20 + 2×4 + 1 = 29px → 여기서는 18 + 2×2 + 1 = 23px
+   * (Handsontable 이 그리드를 만들 때 이 값으로 행 높이를 계산한다)
+   */
+  --ht-line-height: 18px;
+  --ht-cell-vertical-padding: 2px;
   --ht-header-background-color: #d6e7f5;
   --ht-header-foreground-color: #1e4e79;
   --ht-header-font-weight: 700;
@@ -620,35 +614,35 @@ onBeforeUnmount(() => {
   --ht-cell-vertical-border-color: #c5d8ea;
 }
 
-.product-grid__host {
+.error-log-grid__host {
   height: 100%;
 }
 
-.product-grid :deep(.active-row-cell) {
+.error-log-grid :deep(.active-row-cell) {
   background: #d9edf7 !important;
 }
 
-.product-grid :deep(.ht_clone_top th) {
+.error-log-grid :deep(.ht_clone_top th) {
   background: #d6e7f5;
   color: #1e4e79;
   font-weight: 700;
 }
 
-.product-grid :deep(.wtBorder) {
+.error-log-grid :deep(.wtBorder) {
   pointer-events: none;
 }
 
-.product-grid :deep(td.product-seq-link) {
+.error-log-grid :deep(td.error-log-seq-link) {
   color: #1e5aa8;
   text-decoration: underline;
   cursor: pointer;
 }
 
-.product-grid :deep(td.product-seq-link:hover) {
+.error-log-grid :deep(td.error-log-seq-link:hover) {
   color: #c41d3a !important;
 }
 
-.product-pager {
+.error-log-pager {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -658,13 +652,13 @@ onBeforeUnmount(() => {
   background: #f7f8fa;
 }
 
-.product-pager__nav {
+.error-log-pager__nav {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-.product-pager__nav button {
+.error-log-pager__nav button {
   min-width: 24px;
   height: 24px;
   padding: 0 6px;
@@ -675,39 +669,39 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.product-pager__nav button:hover:not(:disabled) {
+.error-log-pager__nav button:hover:not(:disabled) {
   border-color: #9bb8d3;
   background: #e8f1f8;
 }
 
-.product-pager__nav button.is-active {
+.error-log-pager__nav button.is-active {
   border-color: #3d6d99;
   background: #d6e7f5;
   font-weight: 700;
 }
 
-.product-pager__nav button:disabled {
+.error-log-pager__nav button:disabled {
   color: #aaa;
   cursor: default;
 }
 
-.product-pager__total {
+.error-log-pager__total {
   font-weight: 600;
   color: var(--wms-text);
 }
 
 @media print {
-  .product-toolbar,
-  .product-search,
-  .product-pager {
+  .error-log-toolbar,
+  .error-log-search,
+  .error-log-pager {
     display: none !important;
   }
 
-  .product-page {
+  .error-log-page {
     height: auto;
   }
 
-  .product-grid {
+  .error-log-grid {
     overflow: visible;
   }
 }
