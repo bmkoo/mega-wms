@@ -5,7 +5,7 @@
  *                            [--api <주소>] [--api-name <메서드명>] [--keep] [--dry-run] [--no-log]
  *
  *   --menu <key>       (필수) 소메뉴를 넣을 중메뉴 key (menuConfig.js 의 중메뉴 key. 예: ORDER_MENU, BMKOO_L2_MENU)
- *   --popup            상세 폼 팝업도 만든다 (순번 클릭 → 팝업, 단건 조회 + 저장). 없으면 목록 화면만 만든다
+ *   --popup            상세 폼 팝업도 만든다 (첫 @Id 셀 클릭·신규·수정 → 팝업, 단건 조회 + 저장). 없으면 목록 화면만 만든다
  *   --code-status      @Column(name) 이 _CODE 로 끝나는 문자열 필드를 공통코드 필드로 만든다 (groupCd = 컬럼명)
  *                      ※ ZIP_CODE, PRODUCT_CODE, HS_CODE 처럼 공통코드가 아닌 _CODE 컬럼도 대상이 된다.
  *                        그런 컬럼이 있는 엔티티(Order, Channel, OrderRaw 등)에는 --code-status 를 쓰지 않는다
@@ -56,7 +56,7 @@
  *   3. menuConfig.js 지정한 중메뉴 children 끝에 소메뉴 추가 (같은 path 가 있으면 건너뛴다)
  *   4. (--popup) router/index.js 의 /popup 아래에 상세 폼 라우트 추가 (/popup/<kebab>, name <엔티티키>Form)
  *   5. src/views/pages/<폴더>/ 에 생성 (templates/ 의 각 .tpl)
- *        Pg<Entity>.vue      목록 (--popup 이면 순번 클릭 → 상세 팝업)
+ *        Pg<Entity>.vue      목록 (--popup 이면 첫 @Id 셀 클릭 → 상세 팝업)
  *        Pg<Entity>Form.vue  (--popup) 상세 폼 (@Id 외 필드 수정 + 저장 → 목록 다시 조회)
  *        <엔티티키>Popup.js   (--popup) 팝업 창 열기 / 행 전달
  *
@@ -548,9 +548,10 @@ function templateVars(entity, entityFile, api, codeStatus = false) {
  * 템플릿 조건 구역 처리. 마커는 한 줄에 단독으로 쓴다 (중첩 불가)
  *   // #if popup   …   // #else   …   // #endif        (JS)
  *   /* #if popup *\/ … /* #endif *\/                     (CSS)
+ *   <!-- #if popup --> … <!-- #endif -->                 (template HTML)
  */
 function applyConditions(template, flags) {
-    const marker = /^\s*(?:\/\/|\/\*)\s*#(if\s+(\w+)|else|endif)\b.*$/;
+    const marker = /^\s*(?:\/\/|\/\*|<!--)\s*#(if\s+(\w+)|else|endif)\b.*$/;
     const out = [];
     let keep = true;
     let cond = null;
@@ -632,8 +633,8 @@ for (const file of opts.files) {
     const apiPath = opts.api ? toApiPath(opts.api) : `v1/${entity.key}`;
     const api = {
         path: apiPath,
-        queryMethod: opts.apiName || `onApiQuery${entity.className}`,
-        getMethod: `onApiGet${entity.className}List`,
+        queryMethod: opts.apiName || `onApi${entity.className}List`,
+        getMethod: `onApiGet${entity.className}`,
         saveMethod: `onApiSave${entity.className}`,
     };
     let nextApiText = apiText;

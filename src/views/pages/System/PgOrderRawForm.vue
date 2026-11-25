@@ -71,8 +71,8 @@ const router = useRouter();
 
 defineOptions({ name: 'PgOrderRawForm' });
 
-/** 단건 조회 API: apiFunctions.onApiGetOrderRaw(id) → GET v1/orderRaw/{id} */
-const getApi = (id) => proxy.$api.onApiGetOrderRaw(id);
+/** 단건 조회 API: apiFunctions.onApiGetOrderRawList(id) → GET v1/orderRaw/{id} */
+const getApi = (id) => proxy.$api.onApiGetOrderRawList(id);
 /** 저장 API: apiFunctions.onApiSaveOrderRaw(data) → POST v1/orderRaw/save */
 const saveApi = (data) => proxy.$api.onApiSaveOrderRaw(data);
 
@@ -118,6 +118,7 @@ const FIELDS = [
   { data: 'orderAmount', type: 'number', className: 'htRight', width: 90 },
   { data: 'combinedPackageNo', type: 'text', className: '', width: 120 },
   { data: 'mallId', type: 'text', className: '', width: 120 },
+  { data: 'transferYn', type: 'text', className: '', width: 90 },
 ];
 
 const ID_FIELDS = ['rawId'];

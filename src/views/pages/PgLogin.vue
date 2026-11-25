@@ -43,7 +43,7 @@
               <a-input v-model:value="server.ip"     placeholder="127.0.0.1" />
             </a-form-item>
             <a-form-item label="API URL">
-              <a-input v-model:value="server.apiUrl" placeholder="http://localhost:8802/api" />
+              <a-input v-model:value="server.apiUrl" placeholder="http://localhost:22021/api" />
             </a-form-item>
             <a-button block @click="onSaveServer">{{ t('common.save') }}</a-button>
           </a-form>

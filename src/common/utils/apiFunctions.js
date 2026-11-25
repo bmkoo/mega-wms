@@ -55,9 +55,10 @@ class apiFunctions {
         }
     }
 
-    async fncPostApi(url, data) {
+    /** config: axios 요청 설정 (예: { timeout: 300000 } — 오래 걸리는 수집 API) */
+    async fncPostApi(url, data, config) {
         try {
-            const r = await this.#instance().post(url, data);
+            const r = await this.#instance().post(url, data, config);
             return r.data;
         } catch (error) {
             return this.#notifyError(error);
@@ -394,6 +395,21 @@ class apiFunctions {
         return this.fncPostApi('v1/orderRawMove', data);
     }
 
+    /** 주문 엑셀 저장 (화면에서 읽은 행). body = { type, fileName, rows } → { map: { type, totalRows, saved, skipped } } */
+    onApiOrderRawUpload(data) {
+        return this.fncPostApi('v1/orderRawUpload', data, { timeout: 120000 });
+    }
+
+    /** 고도몰 주문수집 → TB_ORDER_RAW. body = { dateType, startDate, endDate (yyyy-MM-dd) } — 하루치 약 60회 호출이라 5분까지 기다림 */
+    onApiCollectGodomall(data) {
+        return this.fncPostApi('v1/godomall/collect', data, { timeout: 300000 });
+    }
+
+    /** 샵링커 주문수집 → TB_ORDER_RAW. body = { stDate, edDate (yyyyMMdd), orderFlag } */
+    onApiCollectShoplinker(data) {
+        return this.fncPostApi('v1/shoplinker/collect', data, { timeout: 300000 });
+    }
+
     onApiGetChannel(params) {
         return this.fncGetApi('v1/channelList', params);
     }
@@ -433,6 +449,18 @@ class apiFunctions {
     /** 재고할당: 주문 + 주문품목 + 상품마스터 (품목 1개 = 1행). params = 화면 검색 조건 */
     onApiQueryStockAssign(params) {
         return this.fncGetApi('v1/stockAssignList', params);
+    }
+
+    onApiLoginHistory(params) {
+        return this.fncGetApi('v1/loginHistory', params);
+    }
+
+    onApiGetOrderRawList(params) {
+        return this.fncGetApi('v1/orderRaw', params);
+    }
+
+    onApiGetOrderRaw(id) {
+        return this.fncGetApi(`v1/orderRaw/${id}`);
     }
 }
 

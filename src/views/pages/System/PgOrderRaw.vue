@@ -11,6 +11,38 @@
           <template #icon><SwapOutlined /></template>
           {{ $t('common.dataMove') }}<template v-if="checkedCount"> ({{ checkedCount }})</template>
         </a-button>
+        <a-button size="small" @click="onSelectAll">{{ $t('common.selectAll') }}</a-button>
+        <a-button size="small" @click="onDeleteSelected">{{ $t('common.deleteSelected') }}</a-button>
+        <!-- 엑셀: 브라우저에서 읽어 그리드에 표시 → [저장] 으로 DB 저장 (파일은 서버로 올리지 않음) -->
+        <a-button size="small" @click="pickExcel('GODOMALL')">
+          <template #icon><FileExcelOutlined /></template>
+          {{ $t('common.godomallExcel') }}
+        </a-button>
+        <a-button size="small" @click="pickExcel('SHOPLINKER')">
+          <template #icon><FileExcelOutlined /></template>
+          {{ $t('common.shoplinkerExcel') }}
+        </a-button>
+        <!-- API: 기간을 골라 수집 → 바로 TB_ORDER_RAW 저장 -->
+        <a-button size="small" @click="openCollect('GODOMALL')">
+          <template #icon><CloudDownloadOutlined /></template>
+          {{ $t('common.godomallApi') }}
+        </a-button>
+        <a-button size="small" @click="openCollect('SHOPLINKER')">
+          <template #icon><CloudDownloadOutlined /></template>
+          {{ $t('common.shoplinkerApi') }}
+        </a-button>
+        <a-button size="small" type="primary" :disabled="!excelUpload" :loading="uploading" @click="onSaveExcel">
+          <template #icon><SaveOutlined /></template>
+          {{ $t('common.save') }}
+        </a-button>
+        <input ref="excelInputRef" type="file" accept=".xls,.xlsx" style="display: none" @change="onExcelFile" />
+        <a-button size="small" @click="toggleSearchPanel">
+          <template #icon>
+            <UpOutlined v-if="searchPanelOpen" />
+            <DownOutlined v-else />
+          </template>
+          {{ searchPanelOpen ? $t('common.collapseSearch') : $t('common.expandSearch') }}
+        </a-button>
       </div>
       <div class="order-raw-toolbar__utils">
         <a-tooltip :title="$t('common.excelDownload')">
@@ -36,17 +68,44 @@
       </div>
     </div>
 
-    <div class="order-raw-search">
+    <!-- 엑셀 미리보기 중: 그리드의 행은 아직 DB 에 없다 -->
+    <div v-if="excelUpload" class="order-raw-upload-bar">
+      <span>{{ $t('message.excelPreview', { file: excelUpload.fileName, type: excelUpload.type, n: $cf.fncComma(filtered.length) }) }}</span>
+      <a-button size="small" @click="cancelExcel">{{ $t('common.cancel') }}</a-button>
+    </div>
+
+    <!-- API 수집 기간 선택 -->
+    <a-modal
+        v-model:open="collect.open"
+        :title="collect.kind === 'GODOMALL' ? $t('common.godomallApi') : $t('common.shoplinkerApi')"
+        :confirm-loading="collect.loading"
+        :ok-text="$t('common.confirm')"
+        :cancel-text="$t('common.cancel')"
+        :mask-closable="false"
+        @ok="onCollect"
+    >
+      <div class="order-raw-collect">
+        <span class="order-raw-collect__label">{{ $t('common.collectPeriod') }}</span>
+        <a-range-picker v-model:value="collect.range" format="YYYY-MM-DD" />
+        <template v-if="collect.kind === 'SHOPLINKER'">
+          <span class="order-raw-collect__label">{{ $t('common.orderFlag') }}</span>
+          <a-select v-model:value="collect.orderFlag" :options="ORDER_FLAG_OPTIONS" style="width: 240px" />
+          <a-alert v-if="collect.orderFlag === '000'" class="order-raw-collect__warn" type="warning" show-icon :message="$t('message.orderFlag000Warn')" />
+        </template>
+      </div>
+    </a-modal>
+
+    <div v-show="searchPanelOpen" class="order-raw-search">
       <!-- 주문구분: 전체 / 샵링커(샵링커주문번호 있음) / 자사몰(샵링커주문번호 없음). 바꾸면 바로 다시 조회 -->
       <div class="order-raw-search__row">
         <span class="order-raw-search__label">{{ $t('field.orderSource') }}</span>
         <a-radio-group
-          v-model:value="search.orderSource"
-          :options="orderSourceOptions"
-          option-type="button"
-          button-style="solid"
-          size="small"
-          @change="onSearch"
+            v-model:value="search.orderSource"
+            :options="orderSourceOptions"
+            option-type="button"
+            button-style="solid"
+            size="small"
+            @change="onSearch"
         />
         <!-- 전송여부: Y(이관됨) / N(이관 전). 값은 cond.transferYn (기본 N). 바꾸면 바로 다시 조회 -->
         <span class="order-raw-search__label" style="margin-left: 24px">{{ $t('field.transferYn') }}</span>
@@ -63,11 +122,11 @@
         <div v-for="f in GRID_SEARCH_FIELDS" :key="f.data" class="order-raw-search__item">
           <span class="order-raw-search__label" :title="$t(`field.${f.data}`)">{{ $t(`field.${f.data}`) }}</span>
           <a-range-picker
-            v-if="f.type === 'date'"
-            v-model:value="cond[f.data]"
-            size="small"
-            format="YYYY-MM-DD"
-            class="flex-1"
+              v-if="f.type === 'date'"
+              v-model:value="cond[f.data]"
+              size="small"
+              format="YYYY-MM-DD"
+              class="flex-1"
           />
           <div v-else-if="f.type === 'number'" class="order-raw-search__range">
             <a-input-number v-model:value="cond[f.data].min" size="small" :controls="false" @press-enter="onSearch" />
@@ -75,30 +134,30 @@
             <a-input-number v-model:value="cond[f.data].max" size="small" :controls="false" @press-enter="onSearch" />
           </div>
           <a-select
-            v-else-if="f.type === 'code'"
-            v-model:value="cond[f.data]"
-            :options="[{ value: '', label: $t('common.all') }, ...codeStore.options(f.codeGroup)]"
-            size="small"
-            class="flex-1"
+              v-else-if="f.type === 'code'"
+              v-model:value="cond[f.data]"
+              :options="[{ value: '', label: $t('common.all') }, ...codeStore.options(f.codeGroup)]"
+              size="small"
+              class="flex-1"
           />
           <!-- 선택 목록 필드 (예: 주문채널 = 판매채널 목록 중 사용 'Y'). 첫 항목 '전체' 는 값 없음 -->
           <a-select
-            v-else-if="f.type === 'select'"
-            v-model:value="cond[f.data]"
-            :options="selectOptions[f.data] || []"
-            size="small"
-            class="flex-1"
+              v-else-if="f.type === 'select'"
+              v-model:value="cond[f.data]"
+              :options="selectOptions[f.data] || []"
+              size="small"
+              class="flex-1"
           />
           <a-input v-else v-model:value="cond[f.data]" size="small" class="flex-1" allow-clear @press-enter="onSearch" />
         </div>
       </div>
       <div class="order-raw-search__row">
         <a-select
-          v-model:value="search.pageSize"
-          :options="pageSizeOptions"
-          size="small"
-          style="width: 110px"
-          @change="onPageSizeChange"
+            v-model:value="search.pageSize"
+            :options="pageSizeOptions"
+            size="small"
+            style="width: 110px"
+            @change="onPageSizeChange"
         />
         <div class="flex-1" />
         <span class="wms-search__label">{{ $t('field.sort') }}</span>
@@ -116,11 +175,11 @@
         <button type="button" :disabled="page.current <= 1" @click="goPage(1)">«</button>
         <button type="button" :disabled="page.current <= 1" @click="goPage(page.current - 1)">‹</button>
         <button
-          v-for="n in pageNumbers"
-          :key="n"
-          type="button"
-          :class="{ 'is-active': n === page.current }"
-          @click="goPage(n)"
+            v-for="n in pageNumbers"
+            :key="n"
+            type="button"
+            :class="{ 'is-active': n === page.current }"
+            @click="goPage(n)"
         >
           {{ n }}
         </button>
@@ -134,7 +193,7 @@
 
 <script setup>
 // 이 파일은 scripts/genPage.mjs 가 OrderRaw.java 에서 생성했다. (템플릿: scripts/templates/PgEntity.vue.tpl)
-import { computed, getCurrentInstance, markRaw, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, markRaw, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Modal, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
@@ -144,6 +203,7 @@ import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
 import { useCommonCodeStore } from '@/store/commonCodeStore';
 import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './orderRawPopup';
+import { KIND_TYPES, parseOrderExcel } from './orderRawExcel';
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
@@ -162,8 +222,8 @@ const loadChannels = async () => {
   const result = await proxy.$api.onApiGetChannel({ useYn: 'Y' });
   const list = result?.list || result?.content || result || [];
   channels.value = (Array.isArray(list) ? list : [])
-    .filter((row) => row.useYn === 'Y') // 서버가 걸러 주지 않아도 'Y' 만 남긴다
-    .sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0) || String(a.channelNm).localeCompare(String(b.channelNm), 'ko'));
+      .filter((row) => row.useYn === 'Y') // 서버가 걸러 주지 않아도 'Y' 만 남긴다
+      .sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0) || String(a.channelNm).localeCompare(String(b.channelNm), 'ko'));
 };
 
 /**
@@ -250,6 +310,46 @@ const onHeaderCheckChange = (checked) => {
   syncChecked();
 };
 
+/** [전체선택] 조회 결과 전체(모든 페이지)의 주문번호를 체크한다. 이미 모두 체크되어 있으면 전체 해제 */
+const onSelectAll = () => {
+  const orderNos = [...new Set(filtered.value.map(orderNoOf).filter(Boolean))];
+  if (!orderNos.length) return;
+  const checked = orderNos.some((orderNo) => !checkedOrderNos.has(orderNo));
+  orderNos.forEach((orderNo) => setChecked(orderNo, checked));
+  syncChecked();
+};
+
+/** [선택삭제] 체크한 주문번호의 행을 목록에서 뺀다. 화면에서만 빼며 DB(TB_ORDER_RAW)는 지우지 않는다 — 다시 조회하면 나온다 */
+const onDeleteSelected = () => {
+  if (!checkedOrderNos.size) {
+    message.warning(t('message.selectRequired'));
+    return;
+  }
+  Modal.confirm({
+    title: t('common.confirm'),
+    content: t('message.removeConfirm'),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
+    onOk: () => {
+      filtered.value = filtered.value.filter((row) => !checkedOrderNos.has(orderNoOf(row)));
+      clearChecked();
+      renderPage();
+      message.success(t('message.removed'));
+    },
+  });
+};
+
+/** [검색 접기/펼치기] 검색 영역을 숨기거나 보이고, 남은 높이에 맞게 그리드 크기를 다시 잡는다 */
+const searchPanelOpen = ref(true);
+
+const toggleSearchPanel = () => {
+  searchPanelOpen.value = !searchPanelOpen.value;
+  nextTick(() => {
+    measureGrid();
+    getHot()?.refreshDimensions();
+  });
+};
+
 /** 헤더 체크박스 클릭 (캡처 단계). 클릭 후 체크 상태(el.checked)대로 페이지 전체를 체크/해제한다 */
 const onGridClickCapture = (event) => {
   const el = event.target;
@@ -258,7 +358,149 @@ const onGridClickCapture = (event) => {
   onHeaderCheckChange(el.checked);
 };
 
+// ─────────────────────────────────────────────
+// 엑셀 불러오기 → 그리드 미리보기 → [저장]
+//   파일은 서버로 올리지 않는다. 브라우저에서 읽어(orderRawExcel.js) 그리드에 보여 주고,
+//   [저장] 때 그리드의 행만 POST v1/orderRawUpload 로 보낸다. [선택삭제] 로 뺀 행은 저장하지 않는다.
+// ─────────────────────────────────────────────
+const excelInputRef = ref(null);
+/** 미리보기 상태 { type, fileName }. null 이면 DB 조회 결과를 보는 중 */
+const excelUpload = ref(null);
+const uploading = ref(false);
+let excelKind = null;
+
+/** [고도몰엑셀] / [샵링커엑셀]: 파일 선택창을 연다 */
+const pickExcel = (kind) => {
+  excelKind = kind;
+  if (!excelInputRef.value) return;
+  excelInputRef.value.value = ''; // 같은 파일을 다시 골라도 change 가 일어나게
+  excelInputRef.value.click();
+};
+
+const onExcelFile = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const { type, rows } = parseOrderExcel(await file.arrayBuffer());
+    if (!KIND_TYPES[excelKind]?.includes(type)) {
+      message.error(t('message.excelKindMismatch', { type }), 6);
+      return;
+    }
+    excelUpload.value = { type, fileName: file.name };
+    clearChecked();
+    // DB 에 아직 없는 행: rawId 없음, 원본 = 파일명, 전송여부 N (그리드 표시용 — 저장 때 서버가 다시 정한다)
+    filtered.value = rows.map((row) => ({ ...row, rawSrc: file.name, transferYn: 'N' }));
+    page.current = 1;
+    renderPage();
+    message.success(t('message.excelLoaded', { n: rows.length }), 6);
+  } catch (error) {
+    message.error(error?.message || String(error), 8);
+  }
+};
+
+/** 미리보기 취소 → DB 조회로 돌아간다 */
+const cancelExcel = () => {
+  excelUpload.value = null;
+  onSearch();
+};
+
+/** [저장]: 그리드에 남아 있는 엑셀 행을 DB 에 저장 */
+const onSaveExcel = () => {
+  const upload = excelUpload.value;
+  if (!upload) return;
+  const rows = filtered.value.map(({ no, checked, ...row }) => row); // 화면 전용 값 제외
+  if (!rows.length) {
+    message.warning(t('common.noData'));
+    return;
+  }
+  Modal.confirm({
+    title: t('common.save'),
+    content: t('message.excelSaveConfirm', { n: commonFunction.fncComma(rows.length) }),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
+    onOk: async () => {
+      uploading.value = true;
+      try {
+        const result = await proxy.$api.onApiOrderRawUpload({ type: upload.type, fileName: upload.fileName, rows });
+        if (!result) return; // 오류 알림은 apiFunctions 가 띄운다
+        message.success(t('message.excelSaved', { totalRows: 0, saved: 0, skipped: 0, ...(result.map || {}) }), 8);
+        excelUpload.value = null;
+        onSearch();
+      } finally {
+        uploading.value = false;
+      }
+    },
+  });
+};
+
+// ─────────────────────────────────────────────
+// [고도몰API] / [샵링커API]: 기간을 골라 수집 → TB_ORDER_RAW 저장
+// ─────────────────────────────────────────────
+/** 샵링커 orderFlag. 000 은 신규주문을 발주확인으로 바꾼다 (되돌릴 수 없음) → 기본값은 007 */
+const ORDER_FLAG_OPTIONS = [
+  { value: '007', label: '007 발주확인' },
+  { value: '000', label: '000 일반(신규→발주확인 변경 ⚠)' },
+  { value: '002', label: '002 정산확정' },
+  { value: '003', label: '003 송장등록' },
+  { value: '004', label: '004 송장전송완료' },
+];
+
+const collect = reactive({ open: false, kind: 'GODOMALL', range: null, orderFlag: '007', loading: false });
+
+const openCollect = (kind) => {
+  if (excelUpload.value) {
+    message.warning(t('message.excelSaveFirst'));
+    return;
+  }
+  collect.kind = kind;
+  collect.range = [dayjs(), dayjs()];
+  collect.orderFlag = '007';
+  collect.open = true;
+};
+
+const runCollect = async () => {
+  const [start, end] = collect.range || [];
+  collect.loading = true;
+  try {
+    const godomall = collect.kind === 'GODOMALL';
+    const result = godomall
+        ? await proxy.$api.onApiCollectGodomall({ dateType: 'order', startDate: start.format('YYYY-MM-DD'), endDate: end.format('YYYY-MM-DD') })
+        : await proxy.$api.onApiCollectShoplinker({ stDate: start.format('YYYYMMDD'), edDate: end.format('YYYYMMDD'), orderFlag: collect.orderFlag });
+    if (!result) return; // 오류 알림은 apiFunctions 가 띄운다
+    const counts = { totalOrders: 0, totalCount: 0, saved: 0, skipped: 0, excluded: 0, ...(result.map || {}) };
+    message.success(t(godomall ? 'message.godomallCollected' : 'message.shoplinkerCollected', counts), 8);
+    collect.open = false;
+    onSearch();
+  } finally {
+    collect.loading = false;
+  }
+};
+
+const onCollect = () => {
+  const [start, end] = collect.range || [];
+  if (!start || !end) {
+    message.warning(t('message.collectPeriodRequired'));
+    return;
+  }
+  if (collect.kind === 'SHOPLINKER' && collect.orderFlag === '000') {
+    Modal.confirm({
+      title: t('common.shoplinkerApi'),
+      content: t('message.orderFlag000Confirm'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
+      okType: 'danger',
+      onOk: runCollect,
+    });
+    return;
+  }
+  runCollect();
+};
+
 const onDataMove = () => {
+  if (excelUpload.value) {
+    message.warning(t('message.excelSaveFirst'));
+    return;
+  }
   const orderNos = [...checkedOrderNos];
   if (!orderNos.length) {
     message.warning(t('message.dataMoveSelectRows'));
@@ -372,9 +614,9 @@ const search = reactive({ ...DEFAULT_SEARCH });
 
 /** 필드별 검색 조건 초기값: 문자열·공통코드 '' / 날짜 null([시작, 끝]) / 숫자 { min, max } / default 가 있으면 그 값 (전송여부 'N') */
 const emptyCond = () =>
-  Object.fromEntries(
-    FIELDS.map((f) => [f.data, f.type === 'number' ? { min: null, max: null } : f.type === 'date' ? null : f.default ?? ''])
-  );
+    Object.fromEntries(
+        FIELDS.map((f) => [f.data, f.type === 'number' ? { min: null, max: null } : f.type === 'date' ? null : f.default ?? ''])
+    );
 
 const cond = reactive(emptyCond());
 
@@ -393,7 +635,7 @@ const sortOptions = computed(() => [
 ]);
 
 const pageSizeOptions = computed(() =>
-  [20, 50, 100, 500, 1000].map((n) => ({ value: n, label: t('common.perPage', { n }) }))
+    [20, 50, 100, 500, 1000].map((n) => ({ value: n, label: t('common.perPage', { n }) }))
 );
 
 const pageNumbers = computed(() => {
@@ -416,8 +658,8 @@ const codeName = (f, value) => codeStore.name(f.codeGroup, value);
 const toDate = (value) => {
   if (value === null || value === undefined || value === '') return null;
   const d = Array.isArray(value)
-    ? dayjs(new Date(value[0], (value[1] || 1) - 1, value[2] || 1, value[3] || 0, value[4] || 0, value[5] || 0))
-    : dayjs(value);
+      ? dayjs(new Date(value[0], (value[1] || 1) - 1, value[2] || 1, value[3] || 0, value[4] || 0, value[5] || 0))
+      : dayjs(value);
   return d.isValid() ? d : null;
 };
 
@@ -501,13 +743,13 @@ const toParams = () => {
 
 /** 날짜 컬럼은 보기 좋은 문자열로 바꿔서 그리드/엑셀에 넣는다 */
 const decorate = (rows, startNo) =>
-  rows.map((row, index) => {
-    const view = { ...row, no: startNo + index, checked: checkedOrderNos.has(orderNoOf(row)) };
-    FIELDS.forEach((f) => {
-      if (f.type === 'date') view[f.data] = toDate(row[f.data])?.format('YYYY-MM-DD HH:mm:ss') ?? '';
+    rows.map((row, index) => {
+      const view = { ...row, no: startNo + index, checked: checkedOrderNos.has(orderNoOf(row)) };
+      FIELDS.forEach((f) => {
+        if (f.type === 'date') view[f.data] = toDate(row[f.data])?.format('YYYY-MM-DD HH:mm:ss') ?? '';
+      });
+      return markRaw(view);
     });
-    return markRaw(view);
-  });
 
 const getHot = () => (hot && !hot.isDestroyed ? hot : null);
 
@@ -526,9 +768,9 @@ const isCommaField = (f) => f.type === 'number' && !f.id;
 
 /** 공통코드 컬럼은 코드 대신 코드명을 보여준다. 데이터는 코드 그대로 (검색·팝업·저장은 코드 기준) */
 const codeRendererOf = (f) =>
-  function (instance, td, row, col, prop, value, cellProperties) {
-    Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, codeName(f, value), cellProperties]);
-  };
+    function (instance, td, row, col, prop, value, cellProperties) {
+      Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, codeName(f, value), cellProperties]);
+    };
 
 /** 순번 셀은 상세 팝업 링크로 보이게 한다 */
 const seqRenderer = function (instance, td, row, col, prop, value, cellProperties) {
@@ -550,7 +792,7 @@ const onFormMessage = (event) => {
 
 /** 한 행의 상세 폼 팝업을 연다 */
 const openForm = (row) => {
-  if (!row) return;
+  if (!row || !row.rawId) return; // 엑셀 미리보기 행은 아직 DB 에 없어 상세가 없다
   const token = stashFormPayload({ row });
   const popup = openFormWindow(formUrl({ id: idOf(row), token }));
   if (!popup) message.warning(t('message.popupBlocked'));
@@ -582,54 +824,54 @@ const createGrid = () => {
   if (!host || getHot()) return;
 
   hot = markRaw(
-    new Handsontable(host, {
-      themeName: 'ht-theme-main',
-      data: [],
-      colHeaders: ['', t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
-      columns: [
-        // 이관 대상 체크박스 (이 컬럼만 편집 가능 — 클릭으로 체크/해제)
-        { data: 'checked', type: 'checkbox', className: 'htCenter', readOnly: false },
-        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: seqRenderer },
-        ...FIELDS.map((f) => ({
-          data: f.data,
-          className: f.className,
-          readOnly: true,
-          editor: false,
-          ...(isCommaField(f) ? { renderer: commaRenderer } : {}),
-          ...(f.type === 'code' ? { renderer: codeRendererOf(f) } : {}),
-        })),
-      ],
-      colWidths: [36, 50, ...FIELDS.map((f) => f.width)],
-      height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
-      width: '100%',
-      stretchH: 'all',
-      rowHeaders: false,
-      manualColumnResize: true,
-      fillHandle: false,
-      imeFastEdit: false,
-      autoRowSize: false,
-      autoColumnSize: false,
-      readOnly: true,
-      outsideClickDeselects: false,
-      licenseKey: 'non-commercial-and-evaluation',
-      // 헤더 첫 칸 = 현재 페이지 전체 체크/해제
-      afterGetColHeader(col, th) {
-        if (col !== 0) return;
-        th.querySelector('.colHeader').innerHTML = `<input type="checkbox" class="order-raw-check-all"${isPageAllChecked() ? ' checked' : ''}>`;
-      },
-      afterChange: onAfterChange,
-      beforeRenderer(td, row) {
-        if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
-          td.classList.add('active-row-cell');
-        } else {
-          td.classList.remove('active-row-cell');
-        }
-      },
-      beforeBeginEditing() {
-        return false;
-      },
-      afterSelection: onAfterSelection,
-    })
+      new Handsontable(host, {
+        themeName: 'ht-theme-main',
+        data: [],
+        colHeaders: ['', t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
+        columns: [
+          // 이관 대상 체크박스 (이 컬럼만 편집 가능 — 클릭으로 체크/해제)
+          { data: 'checked', type: 'checkbox', className: 'htCenter', readOnly: false },
+          { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: seqRenderer },
+          ...FIELDS.map((f) => ({
+            data: f.data,
+            className: f.className,
+            readOnly: true,
+            editor: false,
+            ...(isCommaField(f) ? { renderer: commaRenderer } : {}),
+            ...(f.type === 'code' ? { renderer: codeRendererOf(f) } : {}),
+          })),
+        ],
+        colWidths: [36, 50, ...FIELDS.map((f) => f.width)],
+        height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
+        width: '100%',
+        stretchH: 'all',
+        rowHeaders: false,
+        manualColumnResize: true,
+        fillHandle: false,
+        imeFastEdit: false,
+        autoRowSize: false,
+        autoColumnSize: false,
+        readOnly: true,
+        outsideClickDeselects: false,
+        licenseKey: 'non-commercial-and-evaluation',
+        // 헤더 첫 칸 = 현재 페이지 전체 체크/해제
+        afterGetColHeader(col, th) {
+          if (col !== 0) return;
+          th.querySelector('.colHeader').innerHTML = `<input type="checkbox" class="order-raw-check-all"${isPageAllChecked() ? ' checked' : ''}>`;
+        },
+        afterChange: onAfterChange,
+        beforeRenderer(td, row) {
+          if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
+            td.classList.add('active-row-cell');
+          } else {
+            td.classList.remove('active-row-cell');
+          }
+        },
+        beforeBeginEditing() {
+          return false;
+        },
+        afterSelection: onAfterSelection,
+      })
   );
 
   gridWrapRef.value?.addEventListener('mousedown', onGridMouseDownCapture, true);
@@ -657,6 +899,7 @@ const renderPage = () => {
 };
 
 const onSearch = async () => {
+  excelUpload.value = null; // 조회하면 엑셀 미리보기는 끝난다 (저장하지 않은 행은 버림)
   page.current = 1;
   clearChecked(); // 조회 결과가 바뀌면 이전 체크는 버린다 (보이지 않는 주문이 이관되지 않게)
   // 서버가 조건을 처리하지 않더라도 아래에서 화면 쪽으로 한 번 더 거른다
@@ -707,12 +950,12 @@ const onExcel = () => {
     return view;
   });
   commonFunction.fncExportExcel(
-    rows,
-    [
-      { title: t('field.seq'), dataIndex: 'no' },
-      ...FIELDS.map((f) => ({ title: t(`field.${f.data}`), dataIndex: f.data })),
-    ],
-    `${t('menu.orderRaw')}_${dayjs().format('YYYYMMDD')}.xlsx`
+      rows,
+      [
+        { title: t('field.seq'), dataIndex: 'no' },
+        ...FIELDS.map((f) => ({ title: t(`field.${f.data}`), dataIndex: f.data })),
+      ],
+      `${t('menu.orderRaw')}_${dayjs().format('YYYYMMDD')}.xlsx`
   );
 };
 
@@ -766,7 +1009,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   height: calc(
-    100vh - var(--wms-gnb-height) - var(--wms-userbar-height) - var(--wms-tabbar-height) -
+      100vh - var(--wms-gnb-height) - var(--wms-userbar-height) - var(--wms-tabbar-height) -
       var(--wms-footer-height) - 36px
   );
   background: #fff;
@@ -827,6 +1070,34 @@ onBeforeUnmount(() => {
 
 .order-raw-icon-btn--excel {
   color: #217346;
+}
+
+/* 엑셀 미리보기 안내 (아직 저장 안 됨) */
+.order-raw-upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #f0c36d;
+  background: #fff8e6;
+  color: #8a5a00;
+  font-weight: 600;
+}
+
+.order-raw-collect {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.order-raw-collect__label {
+  font-size: 13px;
+}
+
+.order-raw-collect__warn {
+  grid-column: 1 / -1;
 }
 
 .order-raw-search {

@@ -431,3 +431,238 @@
 ```
 
 </details>
+
+## 2026-11-24 19:57:53 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/log/ErrorLog.java --menu BMKOO_L2_MENU --code-status --api-name onApiQueryErrorLog`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 덮어씀 1 · 추가 4 · 유지 1 · 건너뜀 27
+- 바뀐 파일:
+  - `src/i18n/i18nData.js`
+  - `src/views/pages/System/PgErrorLog.vue`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ ErrorLog (에러로그) — 필드 14개
+  유지   apiFunctions.onApiQueryErrorLog() → GET v1/errorLog (이미 있음)
+  건너뜀 [ko] field.id (기존: "ID")
+  건너뜀 [ko] field.phase (기존: "PHASE")
+  건너뜀 [ko] field.system (기존: "SYSTEM")
+  건너뜀 [ko] field.loggerName (기존: "Logger Name")
+  건너뜀 [ko] field.serverName (기존: "서버명")
+  건너뜀 [ko] field.hostName (기존: "호스트 명")
+  건너뜀 [ko] field.path (기존: "ERROR PATH")
+  건너뜀 [ko] field.message (기존: "메시지")
+  건너뜀 [ko] field.trace (기존: "STACK TRACE")
+  추가   [ko] field.errorDatetime = "에러일시"
+  추가   [ko] field.alertYn = "알람여부"
+  건너뜀 [ko] field.headerMap (기존: "헤더 정보")
+  건너뜀 [ko] field.parameterMap (기존: "파라미터 정보")
+  건너뜀 [ko] field.userInfo (기존: "사용자 정보")
+  건너뜀 [en] field.id (기존: "Id")
+  건너뜀 [en] field.phase (기존: "Phase")
+  건너뜀 [en] field.system (기존: "System")
+  건너뜀 [en] field.loggerName (기존: "Logger Name")
+  건너뜀 [en] field.serverName (기존: "Server Name")
+  건너뜀 [en] field.hostName (기존: "Host Name")
+  건너뜀 [en] field.path (기존: "Path")
+  건너뜀 [en] field.message (기존: "Message")
+  건너뜀 [en] field.trace (기존: "Trace")
+  추가   [en] field.errorDatetime = "Error Datetime"
+  추가   [en] field.alertYn = "Alert Yn"
+  건너뜀 [en] field.headerMap (기존: "Header Map")
+  건너뜀 [en] field.parameterMap (기존: "Parameter Map")
+  건너뜀 [en] field.userInfo (기존: "User Info")
+  건너뜀 [ko] menu.errorLog (기존: "에러로그")
+  건너뜀 [en] menu.errorLog (기존: "Error Log")
+  건너뜀 메뉴 path 'errorLog' (이미 있음)
+  코드   _CODE 로 끝나는 문자열 컬럼이 없습니다
+  덮어씀 src/views/pages/System/PgErrorLog.vue
+  참고   팝업 없이 생성: 기존 System/PgErrorLogForm.vue, System/errorLogPopup.js 와 /popup 라우트는 그대로 둡니다
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>
+
+## 2026-11-24 20:04:06 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/user/LoginHistory.java --menu BMKOO_L2_MENU --code-status --api-name onApiLoginHistory`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 덮어씀 1 · 추가 5 · 건너뜀 17
+- 바뀐 파일:
+  - `src/common/utils/apiFunctions.js`
+  - `src/i18n/i18nData.js`
+  - `src/views/pages/System/PgLoginHistory.vue`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ LoginHistory (라벨 없음) — 필드 9개
+  추가   apiFunctions.onApiLoginHistory() → GET v1/loginHistory
+  건너뜀 [ko] field.historyId (기존: "HISTORY ID")
+  건너뜀 [ko] field.userCd (기존: "사용자코드")
+  건너뜀 [ko] field.userNm (기존: "사용자명")
+  건너뜀 [ko] field.compId (기존: "회사코드")
+  건너뜀 [ko] field.loginDate (기존: "마지막로그인일시")
+  건너뜀 [ko] field.userAgent (기존: "Agent정보")
+  건너뜀 [ko] field.loginIp (기존: "login IP Addr")
+  추가   [ko] field.loginStatus = "로그인 상태(LOGIN:초기로그인, REAUTH:재인증, FAIL:실패)"
+  추가   [ko] field.failReason = "로그인 실패사유"
+  건너뜀 [en] field.historyId (기존: "History Id")
+  건너뜀 [en] field.userCd (기존: "User Cd")
+  건너뜀 [en] field.userNm (기존: "User Nm")
+  건너뜀 [en] field.compId (기존: "Comp Id")
+  건너뜀 [en] field.loginDate (기존: "Login Date")
+  건너뜀 [en] field.userAgent (기존: "User Agent")
+  건너뜀 [en] field.loginIp (기존: "Login Ip")
+  추가   [en] field.loginStatus = "Login Status"
+  추가   [en] field.failReason = "Fail Reason"
+  건너뜀 [ko] menu.loginHistory (기존: "LoginHistory")
+  건너뜀 [en] menu.loginHistory (기존: "Login History")
+  건너뜀 메뉴 path 'loginHistory' (이미 있음)
+  코드   _CODE 로 끝나는 문자열 컬럼이 없습니다
+  덮어씀 src/views/pages/System/PgLoginHistory.vue
+  참고   팝업 없이 생성: 기존 System/PgLoginHistoryForm.vue, System/loginHistoryPopup.js 와 /popup 라우트는 그대로 둡니다
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>
+
+## 2026-11-24 20:07:54 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/OrderRaw.java --menu BMKOO_L2_MENU --code-status --popup --api-name onApiOrderRaw`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 덮어씀 3 · 추가 2 · 유지 1 · 건너뜀 86
+- 바뀐 파일:
+  - `src/common/utils/apiFunctions.js`
+  - `src/views/pages/System/PgOrderRaw.vue`
+  - `src/views/pages/System/PgOrderRawForm.vue`
+  - `src/views/pages/System/orderRawPopup.js`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ OrderRaw (매출데이터(오클릭/네이버체크아웃/오픈마켓)) — 필드 41개
+  추가   apiFunctions.onApiOrderRaw() → GET v1/orderRaw
+  추가   apiFunctions.onApiGetOrderRawList() → GET v1/orderRaw/${id}
+  유지   apiFunctions.onApiSaveOrderRaw() → POST v1/orderRaw/save (이미 있음)
+  건너뜀 [ko] field.rawId (기존: "행 ID")
+  건너뜀 [ko] field.rawSrc (기존: "원본 파일명")
+  건너뜀 [ko] field.srcRow (기존: "시트 내 데이터 행번호(1부터)")
+  건너뜀 [ko] field.orderChannel (기존: "주문 채널")
+  건너뜀 [ko] field.orderType (기존: "주문 유형")
+  건너뜀 [ko] field.orderNo (기존: "주문번호")
+  건너뜀 [ko] field.orderItemNo (기존: "상품주문번호")
+  건너뜀 [ko] field.ordererName (기존: "주문자 이름")
+  건너뜀 [ko] field.ordererTel (기존: "주문자 전화번호")
+  건너뜀 [ko] field.ordererMobile (기존: "주문자 핸드폰 번호")
+  건너뜀 [ko] field.receiverName (기존: "수취인 이름")
+  건너뜀 [ko] field.receiverTel (기존: "수취인 전화번호")
+  건너뜀 [ko] field.receiverMobile (기존: "수취인 핸드폰 번호")
+  건너뜀 [ko] field.receiverZipcode (기존: "수취인 우편번호")
+  건너뜀 [ko] field.receiverAddress (기존: "수취인 전체주소")
+  건너뜀 [ko] field.productName (기존: "상품명")
+  건너뜀 [ko] field.optionInfo (기존: "옵션정보")
+  건너뜀 [ko] field.quantity (기존: "상품수량")
+  건너뜀 [ko] field.orderMessage (기존: "주문시 남기는 글")
+  건너뜀 [ko] field.invoiceNo (기존: "송장 번호")
+  건너뜀 [ko] field.orderStatus (기존: "주문상태")
+  건너뜀 [ko] field.ownProductCode (기존: "자체상품코드")
+  건너뜀 [ko] field.maker (기존: "제조사")
+  건너뜀 [ko] field.brandName (기존: "브랜드명")
+  건너뜀 [ko] field.paymentMethod (기존: "결제방법")
+  건너뜀 [ko] field.shopType (기존: "상점구분")
+  건너뜀 [ko] field.mobileAppDiscountAmount (기존: "모바일앱 할인금액")
+  건너뜀 [ko] field.orderSeq (기존: "주문코드(순서)")
+  건너뜀 [ko] field.hsCode (기존: "HS코드")
+  건너뜀 [ko] field.shoplinkerOrderNo (기존: "샵링커주문번호")
+  건너뜀 [ko] field.clientCompany (기존: "고객사")
+  건너뜀 [ko] field.productCode (기존: "상품코드")
+  건너뜀 [ko] field.mallProductCode (기존: "쇼핑몰 상품코드")
+  건너뜀 [ko] field.clientProductCode (기존: "고객사 상품코드")
+  건너뜀 [ko] field.shippingPayment (기존: "배송결제(신용,착불)")
+  건너뜀 [ko] field.mallSalePrice (기존: "쇼핑몰 판매가")
+  건너뜀 [ko] field.expectedSettlementAmount (기존: "정산예정액")
+  건너뜀 [ko] field.orderAmount (기존: "주문금액")
+  건너뜀 [ko] field.combinedPackageNo (기존: "합포장번호")
+  건너뜀 [ko] field.mallId (기존: "쇼핑몰아이디")
+  건너뜀 [ko] field.transferYn (기존: "전송여부")
+  건너뜀 [en] field.rawId (기존: "Raw Id")
+  건너뜀 [en] field.rawSrc (기존: "Raw Src")
+  건너뜀 [en] field.srcRow (기존: "Src Row")
+  건너뜀 [en] field.orderChannel (기존: "Order Channel")
+  건너뜀 [en] field.orderType (기존: "Order Type")
+  건너뜀 [en] field.orderNo (기존: "Order no.")
+  건너뜀 [en] field.orderItemNo (기존: "Order Item No")
+  건너뜀 [en] field.ordererName (기존: "Orderer Name")
+  건너뜀 [en] field.ordererTel (기존: "Orderer Tel")
+  건너뜀 [en] field.ordererMobile (기존: "Orderer Mobile")
+  건너뜀 [en] field.receiverName (기존: "Receiver Name")
+  건너뜀 [en] field.receiverTel (기존: "Receiver Tel")
+  건너뜀 [en] field.receiverMobile (기존: "Receiver Mobile")
+  건너뜀 [en] field.receiverZipcode (기존: "Receiver Zipcode")
+  건너뜀 [en] field.receiverAddress (기존: "Receiver Address")
+  건너뜀 [en] field.productName (기존: "Product")
+  건너뜀 [en] field.optionInfo (기존: "Option Info")
+  건너뜀 [en] field.quantity (기존: "Quantity")
+  건너뜀 [en] field.orderMessage (기존: "Order Message")
+  건너뜀 [en] field.invoiceNo (기존: "Invoice No")
+  건너뜀 [en] field.orderStatus (기존: "Order Status")
+  건너뜀 [en] field.ownProductCode (기존: "Own Product Code")
+  건너뜀 [en] field.maker (기존: "Maker")
+  건너뜀 [en] field.brandName (기존: "Brand Name")
+  건너뜀 [en] field.paymentMethod (기존: "Payment Method")
+  건너뜀 [en] field.shopType (기존: "Shop Type")
+  건너뜀 [en] field.mobileAppDiscountAmount (기존: "Mobile App Discount Amount")
+  건너뜀 [en] field.orderSeq (기존: "Order Seq")
+  건너뜀 [en] field.hsCode (기존: "Hs Code")
+  건너뜀 [en] field.shoplinkerOrderNo (기존: "Shoplinker Order No")
+  건너뜀 [en] field.clientCompany (기존: "Client Company")
+  건너뜀 [en] field.productCode (기존: "Product Code")
+  건너뜀 [en] field.mallProductCode (기존: "Mall Product Code")
+  건너뜀 [en] field.clientProductCode (기존: "Client Product Code")
+  건너뜀 [en] field.shippingPayment (기존: "Shipping Payment")
+  건너뜀 [en] field.mallSalePrice (기존: "Mall Sale Price")
+  건너뜀 [en] field.expectedSettlementAmount (기존: "Expected Settlement Amount")
+  건너뜀 [en] field.orderAmount (기존: "Order Amount")
+  건너뜀 [en] field.combinedPackageNo (기존: "Combined Package No")
+  건너뜀 [en] field.mallId (기존: "Mall Id")
+  건너뜀 [en] field.transferYn (기존: "Transferred")
+  건너뜀 [ko] menu.orderRaw (기존: "매출데이터이관")
+  건너뜀 [en] menu.orderRaw (기존: "Order Raw")
+  건너뜀 메뉴 path 'orderRaw' (이미 있음)
+  건너뜀 팝업 라우트 'orderRawForm' (이미 있음)
+  코드   ownProductCode → 공통코드 OWN_PRODUCT_CODE, hsCode → 공통코드 HS_CODE, productCode → 공통코드 PRODUCT_CODE, mallProductCode → 공통코드 MALL_PRODUCT_CODE, clientProductCode → 공통코드 CLIENT_PRODUCT_CODE
+  덮어씀 src/views/pages/System/PgOrderRaw.vue
+  덮어씀 src/views/pages/System/PgOrderRawForm.vue
+  덮어씀 src/views/pages/System/orderRawPopup.js
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>
+
+## 2026-11-24 20:14:29 · ⚠️ 일부 중단
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/OrderRaw.java --menu BMKOO_L2_MENU --code-status --popup --api-name OrderRaw`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 추가 1 · 중단 1
+- 중단된 엔티티: OrderRaw
+- 오류: 중단된 엔티티: OrderRaw
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ OrderRaw (매출데이터(오클릭/네이버체크아웃/오픈마켓)) — 필드 41개
+  추가   apiFunctions.OrderRaw() → GET v1/orderRaw
+  중단   apiFunctions.onApiGetOrderRaw() 가 이미 다른 주소(v1/orderRawList/${id})를 씁니다.
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+
+중단된 엔티티: OrderRaw
+```
+
+</details>

@@ -7,6 +7,29 @@
           <template #icon><SearchOutlined /></template>
           {{ $t('common.search') }}
         </a-button>
+        <!-- #if popup -->
+        <a-button size="small" @click="onCreate">
+          <template #icon><FileAddOutlined /></template>
+          {{ $t('common.create') }}
+        </a-button>
+        <a-button size="small" @click="onModify">
+          <template #icon><FormOutlined /></template>
+          {{ $t('common.modify') }}
+        </a-button>
+        <!-- #endif -->
+        <a-button size="small" @click="onOpenSave">
+          <template #icon><SaveOutlined /></template>
+          {{ $t('common.openSave') }}
+        </a-button>
+        <a-button size="small" @click="onSelectAll">{{ $t('common.selectAll') }}</a-button>
+        <a-button size="small" @click="onDeleteSelected">{{ $t('common.deleteSelected') }}</a-button>
+        <a-button size="small" @click="toggleSearchPanel">
+          <template #icon>
+            <UpOutlined v-if="searchPanelOpen" />
+            <DownOutlined v-else />
+          </template>
+          {{ searchPanelOpen ? $t('common.collapseSearch') : $t('common.expandSearch') }}
+        </a-button>
       </div>
       <div class="__PREFIX__-toolbar__utils">
         <a-tooltip :title="$t('common.excelDownload')">
@@ -32,7 +55,7 @@
       </div>
     </div>
 
-    <div class="__PREFIX__-search">
+    <div v-show="searchPanelOpen" class="__PREFIX__-search">
       <!-- 엔티티 필드마다 검색 조건 1개, 한 행에 4개씩. 문자열=부분일치 / 날짜=기간 / 숫자=최소~최대 / 공통코드=선택 -->
       <div class="__PREFIX__-search__grid">
         <div v-for="f in FIELDS" :key="f.data" class="__PREFIX__-search__item">
@@ -101,9 +124,9 @@
 
 <script setup>
 // 이 파일은 scripts/genPage.mjs 가 __ENTITY_FILE__ 에서 생성했다. (템플릿: scripts/templates/PgEntity.vue.tpl)
-import { computed, getCurrentInstance, markRaw, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, markRaw, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { message } from 'ant-design-vue';
+import { Modal, message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import Handsontable from 'handsontable';
 import 'handsontable/styles/handsontable.css';
@@ -123,23 +146,34 @@ defineOptions({ name: 'Pg__ENTITY__' });
 
 /** 조회 API: apiFunctions.__API_METHOD__() → GET __API_URL__ */
 const queryApi = (params) => proxy.$api.__API_METHOD__(params);
-// #if popup
 
-/** 상세 팝업에 넘길 id 를 만드는 @Id 필드. 여러 개면 "값1,값2" 로 이어 붙여 한 구간으로 보낸다 (GET __API_URL__/{id}) */
+/**
+ * 행을 구분하는 @Id 필드. 여러 개면 "값1,값2" 로 이어 붙인다.
+ * 쓰는 곳: 수정 셀 표시·선택삭제의 행 구분, 그리드 편집 잠금(읽기 전용), 상세 팝업 id (GET __API_URL__/{id})
+ */
 const ID_FIELDS = __ID_FIELDS__;
-// #endif
 
 /** 엔티티 필드 → 그리드 컬럼 (헤더는 i18n field.<data>) */
 const FIELDS = [
 __FIELDS__
 ];
 
+/** 가로 스크롤해도 고정할 왼쪽 컬럼 수: 선택 체크박스 + 순번 + @Id 필드 */
+const FIXED_COLUMNS = 2 + ID_FIELDS.length;
+
 const gridWrapRef = ref(null);
 const hotHostRef = ref(null);
 const filtered = ref([]);
+/** 검색 영역 펼침/접힘 (툴바 버튼) */
+const searchPanelOpen = ref(true);
 
 let hot = null;
+/** 마지막으로 선택한 행 (수정 버튼 대상) */
+let selectedRow = null;
 const activeRange = { start: -1, end: -1 };
+/** 그리드에서 값을 바꾼 셀 ("<id>::<필드>") 과 바꾸기 전 원래 값. 원래 값으로 되돌리면 표시가 사라진다 */
+const changedCellKeys = new Set();
+const originalCellValues = new Map();
 
 /** 정렬 값은 "<필드>:asc" / "<필드>:desc" */
 const DEFAULT_SEARCH = {
@@ -291,11 +325,27 @@ const getHot = () => (hot && !hot.isDestroyed ? hot : null);
 const onAfterSelection = function (row, _col, row2) {
   activeRange.start = row < 0 ? -1 : Math.min(row, row2);
   activeRange.end = row < 0 ? -1 : Math.max(row, row2);
+  selectedRow = row < 0 ? null : this.getSourceDataAtRow(row) || null;
+};
+
+const idOf = (row) => ID_FIELDS.map((key) => encodeURIComponent(String(row?.[key] ?? ''))).join(',');
+
+/** 잘린 셀의 전체 내용을 마우스 오버 시 기본 툴팁으로 보여준다 */
+const setCellTooltip = (td) => {
+  const text = String(td.textContent || '').trim();
+  if (text) td.title = text;
+  else td.removeAttribute('title');
+};
+
+const textRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+  setCellTooltip(td);
 };
 
 /** 숫자 컬럼은 1000 단위 콤마로 보여준다. 데이터는 숫자 그대로라 정렬·검색·엑셀에는 영향이 없다 */
 const commaRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, commonFunction.fncComma(value), cellProperties]);
+  setCellTooltip(td);
 };
 
 /** 콤마를 붙일 숫자 컬럼인지 (@Id 숫자 필드는 제외) */
@@ -305,16 +355,16 @@ const isCommaField = (f) => f.type === 'number' && !f.id;
 const codeRendererOf = (f) =>
   function (instance, td, row, col, prop, value, cellProperties) {
     Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, codeName(f, value), cellProperties]);
+    setCellTooltip(td);
   };
 // #if popup
 
-/** 순번 셀은 상세 팝업 링크로 보이게 한다 */
-const seqRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+/** 첫 @Id 셀은 상세 팝업 링크로 보이게 한다 */
+const detailLinkRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
-  td.classList.add('__PREFIX__-seq-link');
+  td.classList.add('__PREFIX__-detail-link');
+  setCellTooltip(td);
 };
-
-const idOf = (row) => ID_FIELDS.map((key) => encodeURIComponent(String(row?.[key] ?? ''))).join(',');
 
 let formChannel = null;
 
@@ -326,19 +376,19 @@ const onFormMessage = (event) => {
   onSearch();
 };
 
-/** 한 행의 상세 폼 팝업을 연다 */
-const openForm = (row) => {
-  if (!row) return;
+/** 상세 폼 팝업을 연다. 행이 없거나 @Id 가 비어 있으면 신규 입력 폼 */
+const openForm = (row = {}) => {
   const token = stashFormPayload({ row });
-  const popup = openFormWindow(formUrl({ id: idOf(row), token }));
+  const hasId = ID_FIELDS.some((key) => row[key] !== null && row[key] !== undefined && row[key] !== '');
+  const popup = openFormWindow(formUrl({ id: hasId ? idOf(row) : '', token }));
   if (!popup) message.warning(t('message.popupBlocked'));
 };
 
-/** Handsontable 선택 시작보다 먼저 가로채서, 순번 클릭 시 드래그 선택 없이 팝업만 연다 */
+/** Handsontable 선택 시작보다 먼저 가로채서, 첫 @Id 셀 클릭 시 드래그 선택 없이 팝업만 연다 */
 const onGridMouseDownCapture = (event) => {
   if (event.button !== 0) return;
   const td = event.target?.closest?.('td');
-  if (!td || !td.classList.contains('__PREFIX__-seq-link') || !gridWrapRef.value?.contains(td)) return;
+  if (!td || !td.classList.contains('__PREFIX__-detail-link') || !gridWrapRef.value?.contains(td)) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -359,43 +409,65 @@ const createGrid = () => {
     new Handsontable(host, {
       themeName: 'ht-theme-main',
       data: [],
-      colHeaders: [t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
+      colHeaders: [t('common.select'), t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
       columns: [
-        // #if popup
-        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: seqRenderer },
-        // #else
-        { data: 'no', className: 'htCenter', readOnly: true, editor: false },
-        // #endif
+        { data: 'checked', className: 'htCenter', type: 'checkbox', readOnly: false },
+        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: textRenderer },
+        // @Id 필드는 읽기 전용, 나머지는 셀에서 바로 고칠 수 있다 (바뀐 셀은 노란색으로 표시)
         ...FIELDS.map((f) => ({
           data: f.data,
           className: f.className,
-          readOnly: true,
-          editor: false,
+          readOnly: ID_FIELDS.includes(f.data),
+          editor: ID_FIELDS.includes(f.data) ? false : undefined,
+          renderer: textRenderer,
           ...(isCommaField(f) ? { renderer: commaRenderer } : {}),
           ...(f.type === 'code' ? { renderer: codeRendererOf(f) } : {}),
+          // #if popup
+          ...(f.data === ID_FIELDS[0] ? { renderer: detailLinkRenderer } : {}),
+          // #endif
         })),
       ],
-      colWidths: [50, ...FIELDS.map((f) => f.width)],
+      colWidths: [44, 50, ...FIELDS.map((f) => f.width)],
       height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
       width: '100%',
       stretchH: 'all',
+      fixedColumnsStart: FIXED_COLUMNS,
       rowHeaders: false,
       manualColumnResize: true,
       fillHandle: false,
+      wordWrap: false,
       imeFastEdit: false,
       autoRowSize: false,
       autoColumnSize: false,
-      readOnly: true,
       licenseKey: 'non-commercial-and-evaluation',
-      beforeRenderer(td, row) {
+      beforeRenderer(td, row, _col, prop) {
         if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
           td.classList.add('active-row-cell');
         } else {
           td.classList.remove('active-row-cell');
         }
+        const sourceRow = this.getSourceDataAtRow(row);
+        const key = `${idOf(sourceRow)}::${String(prop)}`;
+        td.classList.toggle('changed-cell', changedCellKeys.has(key));
       },
-      beforeBeginEditing() {
-        return false;
+      /** 셀 편집·체크를 조회 결과(filtered)에도 반영해 페이지를 넘겨도 유지한다 */
+      afterChange(changes, source) {
+        if (!changes || source === 'loadData') return;
+        changes.forEach(([rowIndex, prop, oldValue, value]) => {
+          const changedRow = this.getSourceDataAtRow(rowIndex);
+          const original = filtered.value.find((row) => idOf(row) === idOf(changedRow));
+          if (!original) return;
+          if (prop === 'checked') {
+            original.checked = !!value;
+            return;
+          }
+          const key = `${idOf(changedRow)}::${String(prop)}`;
+          if (!originalCellValues.has(key)) originalCellValues.set(key, oldValue);
+          if (Object.is(value, originalCellValues.get(key))) changedCellKeys.delete(key);
+          else changedCellKeys.add(key);
+          original[prop] = value;
+        });
+        this.render();
       },
       afterSelection: onAfterSelection,
     })
@@ -422,12 +494,15 @@ const renderPage = () => {
   page.totalPages = totalPages;
   const start = (page.current - 1) * size;
   getHot()?.loadData(decorate(filtered.value.slice(start, start + size), start + 1));
+  selectedRow = null;
   activeRange.start = -1;
   activeRange.end = -1;
 };
 
 const onSearch = async () => {
   page.current = 1;
+  changedCellKeys.clear();
+  originalCellValues.clear();
   // 서버가 조건을 처리하지 않더라도 아래에서 화면 쪽으로 한 번 더 거른다
   const result = await queryApi(toParams());
   // ax-boot 목록은 { list }, Spring Page 는 { content }, 그 외에는 배열 그대로 온다
@@ -458,6 +533,60 @@ const goPage = (n) => {
   if (next === page.current) return;
   page.current = next;
   renderPage();
+};
+// #if popup
+
+const onCreate = () => openForm();
+
+const onModify = () => {
+  if (!selectedRow) {
+    message.warning(t('message.selectRequired'));
+    return;
+  }
+  openForm(selectedRow);
+};
+// #endif
+
+/** 조회 결과 전체를 체크한다. 이미 모두 체크되어 있으면 전체 해제 */
+const onSelectAll = () => {
+  if (!filtered.value.length) return;
+  const checked = filtered.value.some((row) => !row.checked);
+  filtered.value.forEach((row) => {
+    row.checked = checked;
+  });
+  renderPage();
+};
+
+/** 체크한 행을 목록에서 뺀다 (화면에서만. 서버 삭제 API 는 아직 연결하지 않았다) */
+const onDeleteSelected = () => {
+  const selected = filtered.value.filter((row) => row.checked);
+  if (!selected.length) {
+    message.warning(t('message.selectRequired'));
+    return;
+  }
+  Modal.confirm({
+    title: t('common.confirm'),
+    content: t('message.removeConfirm'),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
+    onOk: () => {
+      const ids = new Set(selected.map((row) => idOf(row)));
+      filtered.value = filtered.value.filter((row) => !ids.has(idOf(row)));
+      renderPage();
+      message.success(t('message.removed'));
+    },
+  });
+};
+
+/** 저장 (아직 서버 저장 API 를 연결하지 않아 완료 메시지만 띄운다) */
+const onOpenSave = () => message.success(t('message.saved'));
+
+const toggleSearchPanel = () => {
+  searchPanelOpen.value = !searchPanelOpen.value;
+  nextTick(() => {
+    measureGrid();
+    getHot()?.refreshDimensions();
+  });
 };
 
 const onExcel = () => {
@@ -670,6 +799,15 @@ onBeforeUnmount(() => {
   background: #d9edf7 !important;
 }
 
+.__PREFIX__-grid :deep(.changed-cell) {
+  background: #fff1b8 !important;
+}
+
+.__PREFIX__-grid :deep(.handsontable td),
+.__PREFIX__-grid :deep(.handsontable th) {
+  font-size: 12px;
+}
+
 .__PREFIX__-grid :deep(.ht_clone_top th) {
   background: #d6e7f5;
   color: #1e4e79;
@@ -681,13 +819,13 @@ onBeforeUnmount(() => {
 }
 /* #if popup */
 
-.__PREFIX__-grid :deep(td.__PREFIX__-seq-link) {
+.__PREFIX__-grid :deep(td.__PREFIX__-detail-link) {
   color: #1e5aa8;
   text-decoration: underline;
   cursor: pointer;
 }
 
-.__PREFIX__-grid :deep(td.__PREFIX__-seq-link:hover) {
+.__PREFIX__-grid :deep(td.__PREFIX__-detail-link:hover) {
   color: #c41d3a !important;
 }
 /* #endif */
