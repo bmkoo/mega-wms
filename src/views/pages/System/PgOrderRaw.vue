@@ -1002,7 +1002,7 @@ onMounted(() => {
   destroyGrid();
   createGrid();
   measureGrid();
-  onSearch();
+  // 화면을 열 때는 조회하지 않는다 (목록이 커서 느림). [조회] 버튼으로 검색한다
   loadChannels();
   // 공통코드가 그리드보다 늦게 도착하면 코드명으로 다시 그린다 (이미 불러왔으면 바로 끝남)
   codeStore.load().then(() => getHot()?.render());

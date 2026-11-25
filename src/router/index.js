@@ -236,6 +236,17 @@ const routes = [
                     popup: true,
                 },
             },
+            {
+                path: 'api-log',
+                name: 'apiLogForm',
+                component: () => import('@/views/pages/System/PgApiLogForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.apiLog',
+                    popup: true,
+                },
+            },
         ],
     },
     {

@@ -169,6 +169,7 @@ export const MENUS = [
                     { path: 'orderItem', nameKey: 'menu.orderItem', component: 'System/PgOrderItem', roles: STAFF_ROLES },
                     { path: 'stockAssign', nameKey: 'menu.stockAssign', component: 'System/PgStockAssign', roles: STAFF_ROLES },
                     { path: 'orderTransfer', nameKey: 'menu.orderTransfer', component: 'System/PgOrderTransfer', roles: STAFF_ROLES },
+                    { path: 'apiLog', nameKey: 'menu.apiLog', component: 'System/PgApiLog', roles: STAFF_ROLES },
                 ],
             },
         ],
@@ -270,7 +271,6 @@ export const MENUS = [
                 icon: 'FileSearchOutlined',
                 children: [
                     { path: 'history', nameKey: 'menu.history', roles: [ROLE.ADMIN] },
-                    { path: 'apiLog', nameKey: 'menu.apiLog', roles: [ROLE.ADMIN] },
 
                 ],
             },

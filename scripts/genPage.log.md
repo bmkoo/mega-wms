@@ -688,3 +688,280 @@
 ```
 
 </details>
+
+## 2026-11-25 17:11:14 · ❌ 실패
+
+- 명령: `node scripts/genPage.mjs --help`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: (결과 없음)
+- 오류: 사용법: node scripts/genPage.mjs <Entity.java ...> --menu <중메뉴 key> [--popup] [--code-status] [--folder <폴더>] [--roles STAFF_ROLES] [--api <주소>] [--api-name <메서드명>] [--keep] [--dry-run] [--no-log]
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+사용법: node scripts/genPage.mjs <Entity.java ...> --menu <중메뉴 key> [--popup] [--code-status] [--folder <폴더>] [--roles STAFF_ROLES] [--api <주소>] [--api-name <메서드명>] [--keep] [--dry-run] [--no-log]
+```
+
+</details>
+
+## 2026-11-25 17:11:19 · 🔍 DRY-RUN
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/ApiLog.java --menu BMKOO_L2_MENU --popup --api v1/apiLogList --dry-run`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 생성 3 · 추가 40 · 건너뜀 3
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ ApiLog (외부 API 통신 로그) — 필드 18개
+  추가   apiFunctions.onApiApiLogList() → GET v1/apiLogList
+  추가   apiFunctions.onApiGetApiLog() → GET v1/apiLogList/${id}
+  추가   apiFunctions.onApiSaveApiLog() → POST v1/apiLogList/save
+  추가   [ko] field.logId = "로그 ID"
+  추가   [ko] field.apiType = "연동처 GODOMALL / SHOPLINKER / LOGEN"
+  추가   [ko] field.apiName = "API 이름"
+  추가   [ko] field.refKey = "업무 참조값"
+  추가   [ko] field.reqMethod = "HTTP 메서드"
+  추가   [ko] field.reqUrl = "요청 URL (인증정보 마스킹)"
+  추가   [ko] field.reqBody = "요청 본문 (인증정보 마스킹)"
+  추가   [ko] field.reqAt = "요청 일시"
+  추가   [ko] field.resAt = "응답 일시"
+  추가   [ko] field.elapsedMs = "소요 시간(ms)"
+  추가   [ko] field.httpStatus = "HTTP 상태코드"
+  추가   [ko] field.resCode = "API 결과코드"
+  추가   [ko] field.resMessage = "API 결과메시지"
+  추가   [ko] field.resPayload = "응답 원문"
+  추가   [ko] field.resSize = "응답 원본 크기(byte)"
+  추가   [ko] field.resTruncatedYn = "응답 원문 잘림 여부"
+  추가   [ko] field.successYn = "성공 여부"
+  추가   [ko] field.errorMessage = "실패 사유"
+  추가   [en] field.logId = "Log Id"
+  추가   [en] field.apiType = "Api Type"
+  추가   [en] field.apiName = "Api Name"
+  추가   [en] field.refKey = "Ref Key"
+  추가   [en] field.reqMethod = "Req Method"
+  추가   [en] field.reqUrl = "Req Url"
+  추가   [en] field.reqBody = "Req Body"
+  추가   [en] field.reqAt = "Req At"
+  추가   [en] field.resAt = "Res At"
+  추가   [en] field.elapsedMs = "Elapsed Ms"
+  추가   [en] field.httpStatus = "Http Status"
+  추가   [en] field.resCode = "Res Code"
+  추가   [en] field.resMessage = "Res Message"
+  추가   [en] field.resPayload = "Res Payload"
+  추가   [en] field.resSize = "Res Size"
+  추가   [en] field.resTruncatedYn = "Res Truncated Yn"
+  추가   [en] field.successYn = "Success Yn"
+  추가   [en] field.errorMessage = "Error Message"
+  건너뜀 [ko] menu.apiLog (기존: "API 로그")
+  건너뜀 [en] menu.apiLog (기존: "API Logs")
+  건너뜀 메뉴 path 'apiLog' (이미 있음)
+  추가   팝업 라우트 /popup/api-log (apiLogForm)
+  생성   src/views/pages/System/PgApiLog.vue
+  생성   src/views/pages/System/PgApiLogForm.vue
+  생성   src/views/pages/System/apiLogPopup.js
+
+--dry-run: 파일을 쓰지 않았습니다.
+```
+
+</details>
+
+## 2026-11-25 17:12:27 · 🔍 DRY-RUN
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/ApiLog.java --menu BMKOO_L2_MENU --popup --dry-run`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 생성 3 · 추가 40 · 건너뜀 3
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ ApiLog (외부 API 통신 로그) — 필드 18개
+  추가   apiFunctions.onApiApiLogList() → GET v1/apiLog
+  추가   apiFunctions.onApiGetApiLog() → GET v1/apiLog/${id}
+  추가   apiFunctions.onApiSaveApiLog() → POST v1/apiLog/save
+  추가   [ko] field.logId = "로그 ID"
+  추가   [ko] field.apiType = "연동처"
+  추가   [ko] field.apiName = "API 이름"
+  추가   [ko] field.refKey = "업무 참조값"
+  추가   [ko] field.reqMethod = "HTTP 메서드"
+  추가   [ko] field.reqUrl = "요청 URL"
+  추가   [ko] field.reqBody = "요청 본문"
+  추가   [ko] field.reqAt = "요청 일시"
+  추가   [ko] field.resAt = "응답 일시"
+  추가   [ko] field.elapsedMs = "소요(ms)"
+  추가   [ko] field.httpStatus = "HTTP 상태코드"
+  추가   [ko] field.resCode = "API 결과코드"
+  추가   [ko] field.resMessage = "API 결과메시지"
+  추가   [ko] field.resPayload = "응답 원문"
+  추가   [ko] field.resSize = "응답 크기(byte)"
+  추가   [ko] field.resTruncatedYn = "원문 잘림"
+  추가   [ko] field.successYn = "성공 여부"
+  추가   [ko] field.errorMessage = "실패 사유"
+  추가   [en] field.logId = "Log Id"
+  추가   [en] field.apiType = "Api Type"
+  추가   [en] field.apiName = "Api Name"
+  추가   [en] field.refKey = "Ref Key"
+  추가   [en] field.reqMethod = "Req Method"
+  추가   [en] field.reqUrl = "Req Url"
+  추가   [en] field.reqBody = "Req Body"
+  추가   [en] field.reqAt = "Req At"
+  추가   [en] field.resAt = "Res At"
+  추가   [en] field.elapsedMs = "Elapsed Ms"
+  추가   [en] field.httpStatus = "Http Status"
+  추가   [en] field.resCode = "Res Code"
+  추가   [en] field.resMessage = "Res Message"
+  추가   [en] field.resPayload = "Res Payload"
+  추가   [en] field.resSize = "Res Size"
+  추가   [en] field.resTruncatedYn = "Res Truncated Yn"
+  추가   [en] field.successYn = "Success Yn"
+  추가   [en] field.errorMessage = "Error Message"
+  건너뜀 [ko] menu.apiLog (기존: "API 로그")
+  건너뜀 [en] menu.apiLog (기존: "API Logs")
+  건너뜀 메뉴 path 'apiLog' (이미 있음)
+  추가   팝업 라우트 /popup/api-log (apiLogForm)
+  생성   src/views/pages/System/PgApiLog.vue
+  생성   src/views/pages/System/PgApiLogForm.vue
+  생성   src/views/pages/System/apiLogPopup.js
+
+--dry-run: 파일을 쓰지 않았습니다.
+```
+
+</details>
+
+## 2026-11-25 17:12:31 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/ApiLog.java --menu BMKOO_L2_MENU --popup`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 생성 3 · 추가 40 · 건너뜀 3
+- 바뀐 파일:
+  - `src/common/utils/apiFunctions.js`
+  - `src/router/index.js`
+  - `src/i18n/i18nData.js`
+  - `src/views/pages/System/PgApiLog.vue`
+  - `src/views/pages/System/PgApiLogForm.vue`
+  - `src/views/pages/System/apiLogPopup.js`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ ApiLog (외부 API 통신 로그) — 필드 18개
+  추가   apiFunctions.onApiApiLogList() → GET v1/apiLog
+  추가   apiFunctions.onApiGetApiLog() → GET v1/apiLog/${id}
+  추가   apiFunctions.onApiSaveApiLog() → POST v1/apiLog/save
+  추가   [ko] field.logId = "로그 ID"
+  추가   [ko] field.apiType = "연동처"
+  추가   [ko] field.apiName = "API 이름"
+  추가   [ko] field.refKey = "업무 참조값"
+  추가   [ko] field.reqMethod = "HTTP 메서드"
+  추가   [ko] field.reqUrl = "요청 URL"
+  추가   [ko] field.reqBody = "요청 본문"
+  추가   [ko] field.reqAt = "요청 일시"
+  추가   [ko] field.resAt = "응답 일시"
+  추가   [ko] field.elapsedMs = "소요(ms)"
+  추가   [ko] field.httpStatus = "HTTP 상태코드"
+  추가   [ko] field.resCode = "API 결과코드"
+  추가   [ko] field.resMessage = "API 결과메시지"
+  추가   [ko] field.resPayload = "응답 원문"
+  추가   [ko] field.resSize = "응답 크기(byte)"
+  추가   [ko] field.resTruncatedYn = "원문 잘림"
+  추가   [ko] field.successYn = "성공 여부"
+  추가   [ko] field.errorMessage = "실패 사유"
+  추가   [en] field.logId = "Log Id"
+  추가   [en] field.apiType = "Api Type"
+  추가   [en] field.apiName = "Api Name"
+  추가   [en] field.refKey = "Ref Key"
+  추가   [en] field.reqMethod = "Req Method"
+  추가   [en] field.reqUrl = "Req Url"
+  추가   [en] field.reqBody = "Req Body"
+  추가   [en] field.reqAt = "Req At"
+  추가   [en] field.resAt = "Res At"
+  추가   [en] field.elapsedMs = "Elapsed Ms"
+  추가   [en] field.httpStatus = "Http Status"
+  추가   [en] field.resCode = "Res Code"
+  추가   [en] field.resMessage = "Res Message"
+  추가   [en] field.resPayload = "Res Payload"
+  추가   [en] field.resSize = "Res Size"
+  추가   [en] field.resTruncatedYn = "Res Truncated Yn"
+  추가   [en] field.successYn = "Success Yn"
+  추가   [en] field.errorMessage = "Error Message"
+  건너뜀 [ko] menu.apiLog (기존: "API 로그")
+  건너뜀 [en] menu.apiLog (기존: "API Logs")
+  건너뜀 메뉴 path 'apiLog' (이미 있음)
+  추가   팝업 라우트 /popup/api-log (apiLogForm)
+  생성   src/views/pages/System/PgApiLog.vue
+  생성   src/views/pages/System/PgApiLogForm.vue
+  생성   src/views/pages/System/apiLogPopup.js
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>
+
+## 2026-11-25 17:18:53 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/ApiLog.java --menu BMKOO_L2_MENU --popup`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 생성 3 · 추가 5 · 건너뜀 38
+- 바뀐 파일:
+  - `src/common/utils/apiFunctions.js`
+  - `src/router/index.js`
+  - `src/config/menuConfig.js`
+  - `src/views/pages/System/PgApiLog.vue`
+  - `src/views/pages/System/PgApiLogForm.vue`
+  - `src/views/pages/System/apiLogPopup.js`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ ApiLog (외부 API 통신 로그) — 필드 18개
+  추가   apiFunctions.onApiApiLogList() → GET v1/apiLog
+  추가   apiFunctions.onApiGetApiLog() → GET v1/apiLog/${id}
+  추가   apiFunctions.onApiSaveApiLog() → POST v1/apiLog/save
+  건너뜀 [ko] field.logId (기존: "로그 ID")
+  건너뜀 [ko] field.apiType (기존: "연동처")
+  건너뜀 [ko] field.apiName (기존: "API 이름")
+  건너뜀 [ko] field.refKey (기존: "업무 참조값")
+  건너뜀 [ko] field.reqMethod (기존: "HTTP 메서드")
+  건너뜀 [ko] field.reqUrl (기존: "요청 URL")
+  건너뜀 [ko] field.reqBody (기존: "요청 본문")
+  건너뜀 [ko] field.reqAt (기존: "요청 일시")
+  건너뜀 [ko] field.resAt (기존: "응답 일시")
+  건너뜀 [ko] field.elapsedMs (기존: "소요(ms)")
+  건너뜀 [ko] field.httpStatus (기존: "HTTP 상태코드")
+  건너뜀 [ko] field.resCode (기존: "API 결과코드")
+  건너뜀 [ko] field.resMessage (기존: "API 결과메시지")
+  건너뜀 [ko] field.resPayload (기존: "응답 원문")
+  건너뜀 [ko] field.resSize (기존: "응답 크기(byte)")
+  건너뜀 [ko] field.resTruncatedYn (기존: "원문 잘림")
+  건너뜀 [ko] field.successYn (기존: "성공 여부")
+  건너뜀 [ko] field.errorMessage (기존: "실패 사유")
+  건너뜀 [en] field.logId (기존: "Log Id")
+  건너뜀 [en] field.apiType (기존: "Api Type")
+  건너뜀 [en] field.apiName (기존: "Api Name")
+  건너뜀 [en] field.refKey (기존: "Ref Key")
+  건너뜀 [en] field.reqMethod (기존: "Req Method")
+  건너뜀 [en] field.reqUrl (기존: "Req Url")
+  건너뜀 [en] field.reqBody (기존: "Req Body")
+  건너뜀 [en] field.reqAt (기존: "Req At")
+  건너뜀 [en] field.resAt (기존: "Res At")
+  건너뜀 [en] field.elapsedMs (기존: "Elapsed Ms")
+  건너뜀 [en] field.httpStatus (기존: "Http Status")
+  건너뜀 [en] field.resCode (기존: "Res Code")
+  건너뜀 [en] field.resMessage (기존: "Res Message")
+  건너뜀 [en] field.resPayload (기존: "Res Payload")
+  건너뜀 [en] field.resSize (기존: "Res Size")
+  건너뜀 [en] field.resTruncatedYn (기존: "Res Truncated Yn")
+  건너뜀 [en] field.successYn (기존: "Success Yn")
+  건너뜀 [en] field.errorMessage (기존: "Error Message")
+  건너뜀 [ko] menu.apiLog (기존: "API 로그")
+  건너뜀 [en] menu.apiLog (기존: "API Logs")
+  추가   메뉴 BMKOO_L2_MENU ← { path: 'apiLog', nameKey: 'menu.apiLog', component: 'System/PgApiLog', roles: STAFF_ROLES },
+  추가   팝업 라우트 /popup/api-log (apiLogForm)
+  생성   src/views/pages/System/PgApiLog.vue
+  생성   src/views/pages/System/PgApiLogForm.vue
+  생성   src/views/pages/System/apiLogPopup.js
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>

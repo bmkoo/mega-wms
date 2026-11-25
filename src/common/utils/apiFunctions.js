@@ -43,13 +43,30 @@ class apiFunctions {
         return null;
     }
 
+    /**
+     * 응답 본문 확인. ax-boot 는 업무 오류(ApiException 등)를 HTTP 200 + { status: -500 | 401 …, error: { message } } 로 보낸다.
+     * 이 형태면 오류 알림을 띄우고 null 을 돌려준다 (화면이 성공으로 오인하지 않게)
+     */
+    #unwrap(r) {
+        const data = r?.data;
+        if (data && typeof data === 'object' && data.error && data.status !== undefined && data.status !== 0 && data.status !== 200) {
+            notification.error({
+                duration: 8,
+                message: data.error.message || data.message || '서버 처리 중 오류가 발생했습니다',
+                placement: 'bottomLeft',
+            });
+            return null;
+        }
+        return data;
+    }
+
     // ─────────────────────────────────────────────
     // 공통 HTTP 래퍼
     // ─────────────────────────────────────────────
     async fncGetApi(url, params) {
         try {
             const r = await this.#instance().get(`${url}${commonFunction.fncQueryString(params)}`);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -59,7 +76,7 @@ class apiFunctions {
     async fncPostApi(url, data, config) {
         try {
             const r = await this.#instance().post(url, data, config);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -71,7 +88,7 @@ class apiFunctions {
             const payload = Array.isArray(data) ? data : [data];
 
             const r = await this.#instance().put(url, data);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -80,7 +97,7 @@ class apiFunctions {
     async fncPatchApi(url, data) {
         try {
             const r = await this.#instance().patch(url, data);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -89,7 +106,7 @@ class apiFunctions {
     async fncDeleteApi(url) {
         try {
             const r = await this.#instance().delete(url);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -98,7 +115,7 @@ class apiFunctions {
     async fncPostMultipartApi(url, formData) {
         try {
             const r = await this.#instance({ 'Content-Type': 'multipart/form-data' }).post(url, formData);
-            return r.data;
+            return this.#unwrap(r);
         } catch (error) {
             return this.#notifyError(error);
         }
@@ -462,6 +479,15 @@ class apiFunctions {
     onApiGetOrderRaw(id) {
         return this.fncGetApi(`v1/orderRaw/${id}`);
     }
+
+    onApiApiLogList(params) {
+        return this.fncGetApi('v1/apiLog', params);
+    }
+
+    onApiGetApiLog(id) {
+        return this.fncGetApi(`v1/apiLog/${id}`);
+    }
+
 }
 
 export default new apiFunctions();
