@@ -13,24 +13,6 @@
         </a-button>
         <a-button size="small" @click="onSelectAll">{{ $t('common.selectAll') }}</a-button>
         <a-button size="small" @click="onDeleteSelected">{{ $t('common.deleteSelected') }}</a-button>
-        <!-- 엑셀: 브라우저에서 읽어 그리드에 표시 → [저장] 으로 DB 저장 (파일은 서버로 올리지 않음) -->
-        <a-button size="small" @click="pickExcel('GODOMALL')">
-          <template #icon><FileExcelOutlined /></template>
-          {{ $t('common.godomallExcel') }}
-        </a-button>
-        <a-button size="small" @click="pickExcel('SHOPLINKER')">
-          <template #icon><FileExcelOutlined /></template>
-          {{ $t('common.shoplinkerExcel') }}
-        </a-button>
-        <!-- API: 기간을 골라 수집 → 바로 TB_ORDER_RAW 저장 -->
-        <a-button size="small" @click="openCollect('GODOMALL')">
-          <template #icon><CloudDownloadOutlined /></template>
-          {{ $t('common.godomallApi') }}
-        </a-button>
-        <a-button size="small" @click="openCollect('SHOPLINKER')">
-          <template #icon><CloudDownloadOutlined /></template>
-          {{ $t('common.shoplinkerApi') }}
-        </a-button>
         <a-button size="small" type="primary" :disabled="!excelUpload" :loading="uploading" @click="onSaveExcel">
           <template #icon><SaveOutlined /></template>
           {{ $t('common.save') }}
@@ -96,7 +78,7 @@
     </a-modal>
 
     <div v-show="searchPanelOpen" class="order-raw-search">
-      <!-- 주문구분: 전체 / 샵링커(샵링커주문번호 있음) / 자사몰(샵링커주문번호 없음). 바꾸면 바로 다시 조회 -->
+      <!-- 주문구분: 전체 / 샵링커(입력소스 XLS_SHOPLINKER·API_SHOPLINKER) / 자사몰(그 외). 바꾸면 바로 다시 조회 -->
       <div class="order-raw-search__row">
         <span class="order-raw-search__label">{{ $t('field.orderSource') }}</span>
         <a-radio-group
@@ -116,6 +98,31 @@
             style="width: 80px"
             @change="onSearch"
         />
+        <!-- 주문 가져오기 (주문구분 줄): 엑셀 3종 + API 2종 -->
+        <div class="order-raw-search__import">
+          <!-- 엑셀: 브라우저에서 읽어 그리드에 표시 → [저장] 으로 DB 저장 (파일은 서버로 올리지 않음) -->
+          <a-button size="small" @click="pickExcel('SHOPLINKER')">
+            <template #icon><FileExcelOutlined /></template>
+            {{ $t('common.shoplinkerExcel') }}
+          </a-button>
+          <a-button size="small" @click="pickExcel('NAVER')">
+            <template #icon><FileExcelOutlined /></template>
+            {{ $t('common.naverExcel') }}
+          </a-button>
+          <a-button size="small" @click="pickExcel('MALL')">
+            <template #icon><FileExcelOutlined /></template>
+            {{ $t('common.mallExcel') }}
+          </a-button>
+          <!-- API: 기간을 골라 수집 → 바로 TB_ORDER_RAW 저장 -->
+          <a-button size="small" @click="openCollect('GODOMALL')">
+            <template #icon><CloudDownloadOutlined /></template>
+            {{ $t('common.godomallApi') }}
+          </a-button>
+          <a-button size="small" @click="openCollect('SHOPLINKER')">
+            <template #icon><CloudDownloadOutlined /></template>
+            {{ $t('common.shoplinkerApi') }}
+          </a-button>
+        </div>
       </div>
       <!-- 엔티티 필드마다 검색 조건 1개, 한 행에 4개씩. 문자열=부분일치 / 날짜=기간 / 숫자=최소~최대 / 공통코드=선택 -->
       <div class="order-raw-search__grid">
@@ -203,7 +210,7 @@ import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
 import { useCommonCodeStore } from '@/store/commonCodeStore';
 import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './orderRawPopup';
-import { KIND_TYPES, parseOrderExcel } from './orderRawExcel';
+import { KIND_TYPES, checkFileName, parseOrderExcel } from './orderRawExcel';
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
@@ -226,6 +233,9 @@ const loadChannels = async () => {
       .sort((a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0) || String(a.channelNm).localeCompare(String(b.channelNm), 'ko'));
 };
 
+/** 입력소스 값 (OrderRaw.srcType 주석과 같다) */
+const SRC_TYPES = ['XLS_SHOPLINKER', 'XLS_SHOP_NAVER', 'XLS_SHOP', 'API_SHOPLINKER', 'API_GODOMALL'];
+
 /**
  * type: 'select' 필드의 선택 목록. 첫 항목은 값이 없는 '전체'.
  * 주문채널(orderChannel)에는 판매처명이 들어 있으므로 옵션 값도 판매처명(channelNm)이다.
@@ -234,6 +244,11 @@ const selectOptions = computed(() => ({
   orderChannel: [
     { value: '', label: t('common.all') },
     ...[...new Set(channels.value.map((c) => c.channelNm).filter(Boolean))].map((name) => ({ value: name, label: name })),
+  ],
+  // 입력소스 (TB_ORDER_RAW.SRC_TYPE). 첫 항목 '전체'
+  srcType: [
+    { value: '', label: t('common.all') },
+    ...SRC_TYPES.map((value) => ({ value, label: value })),
   ],
   // 전송여부: Y(이관됨) / N(이관 전). '전체' 없이 둘 중 하나, 기본값 N
   transferYn: [
@@ -257,6 +272,17 @@ let pageRows = [];
 
 const orderNoOf = (row) => String(row?.orderNo ?? '').trim();
 
+/**
+ * 체크·이관할 수 없는 주문번호 = 품번이 상품마스터에 없는 행(isUnmatchedProduct)이 하나라도 있는 주문.
+ * 이관은 주문번호 단위(그 주문의 미전송 행 전체)라 행 하나만 막으면 같은 주문의 다른 행으로 이관될 수 있어서 주문 단위로 막는다.
+ * 조회 결과 전체(filtered) 기준으로 renderPage 때마다 다시 계산한다. 서버도 같은 이유로 이관 때 다시 걸러낸다.
+ */
+let blockedOrderNos = new Set();
+const refreshBlocked = () => {
+  blockedOrderNos = new Set(filtered.value.filter((row) => isUnmatchedProduct(row)).map(orderNoOf).filter(Boolean));
+};
+const isBlocked = (row) => blockedOrderNos.has(orderNoOf(row));
+
 /** 현재 페이지 행의 체크 표시를 checkedOrderNos 에 맞추고 다시 그린다 */
 const syncChecked = () => {
   checkedCount.value = checkedOrderNos.size;
@@ -271,6 +297,7 @@ const syncChecked = () => {
 
 const setChecked = (orderNo, checked) => {
   if (!orderNo) return;
+  if (checked && blockedOrderNos.has(orderNo)) return; // 품번 미매칭 주문은 체크 불가
   if (checked) checkedOrderNos.add(orderNo);
   else checkedOrderNos.delete(orderNo);
 };
@@ -290,9 +317,9 @@ const onAfterChange = (changes, source) => {
   syncChecked();
 };
 
-/** 현재 페이지의 모든 행이 체크되어 있는지 (헤더 체크박스 표시용) */
+/** 현재 페이지의 체크 가능한 행이 모두 체크되어 있는지 (헤더 체크박스 표시용. 품번 미매칭 주문은 제외) */
 const isPageAllChecked = () => {
-  const rows = pageRows;
+  const rows = pageRows.filter((row) => !isBlocked(row));
   return rows.length > 0 && rows.every((row) => checkedOrderNos.has(orderNoOf(row)));
 };
 
@@ -310,9 +337,9 @@ const onHeaderCheckChange = (checked) => {
   syncChecked();
 };
 
-/** [전체선택] 조회 결과 전체(모든 페이지)의 주문번호를 체크한다. 이미 모두 체크되어 있으면 전체 해제 */
+/** [전체선택] 조회 결과 전체(모든 페이지)의 주문번호를 체크한다 (품번 미매칭 주문 제외). 이미 모두 체크되어 있으면 전체 해제 */
 const onSelectAll = () => {
-  const orderNos = [...new Set(filtered.value.map(orderNoOf).filter(Boolean))];
+  const orderNos = [...new Set(filtered.value.filter((row) => !isBlocked(row)).map(orderNoOf).filter(Boolean))];
   if (!orderNos.length) return;
   const checked = orderNos.some((orderNo) => !checkedOrderNos.has(orderNo));
   orderNos.forEach((orderNo) => setChecked(orderNo, checked));
@@ -381,15 +408,16 @@ const onExcelFile = async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
   try {
-    const { type, rows } = parseOrderExcel(await file.arrayBuffer());
+    checkFileName(file.name); // 엑셀 확장자가 아니면 거부
+    const { type, rows } = parseOrderExcel(await file.arrayBuffer()); // 양식이 다르면 Error → 아래 catch 에서 안내
     if (!KIND_TYPES[excelKind]?.includes(type)) {
       message.error(t('message.excelKindMismatch', { type }), 6);
       return;
     }
     excelUpload.value = { type, fileName: file.name };
     clearChecked();
-    // DB 에 아직 없는 행: rawId 없음, 원본 = 파일명, 전송여부 N (그리드 표시용 — 저장 때 서버가 다시 정한다)
-    filtered.value = rows.map((row) => ({ ...row, rawSrc: file.name, transferYn: 'N' }));
+    // DB 에 아직 없는 행: rawId 없음, 입력소스 = 엑셀 종류, 전송여부 N
+    filtered.value = rows.map((row) => ({ ...row, srcType: type, transferYn: 'N' }));
     page.current = 1;
     renderPage();
     message.success(t('message.excelLoaded', { n: rows.length }), 6);
@@ -518,7 +546,7 @@ const onDataMove = () => {
         const result = await proxy.$api.onApiOrderRawMove({ orderNos });
         if (!result) return; // 오류 알림은 apiFunctions 가 띄운다
         // 백엔드는 주문 100건씩 묶음마다 커밋한다. error 가 있으면 그 묶음만 롤백되고 앞 묶음은 이관된 상태다
-        const counts = { orders: 0, items: 0, skipped: 0, transferred: 0, batches: 0, ...(result.map || {}) };
+        const counts = { orders: 0, items: 0, skipped: 0, transferred: 0, batches: 0, unmatched: 0, ...(result.map || {}) };
         if (counts.error) message.error(t('message.dataMoveFailed', counts), 10);
         else message.success(t('message.dataMoveDone', counts), 6);
         onSearch();
@@ -532,48 +560,31 @@ const onDataMove = () => {
 /** 상세 팝업에 넘길 id 를 만드는 @Id 필드. 여러 개면 "값1,값2" 로 이어 붙여 한 구간으로 보낸다 (GET v1/orderRaw/{id}) */
 const ID_FIELDS = ['rawId'];
 
-/** 엔티티 필드 → 그리드 컬럼 (헤더는 i18n field.<data>) */
+/** 엔티티 필드 → 그리드 컬럼 (헤더는 i18n field.<data>). 순서·항목은 OrderRaw.java (TB_ORDER_RAW) 와 같다 */
 const FIELDS = [
-  { data: 'rawId', type: 'number', className: 'htRight', width: 90, id: true },
-  { data: 'rawSrc', type: 'text', className: '', width: 220 },
-  { data: 'srcRow', type: 'number', className: 'htRight', width: 90 },
+  { data: 'rawId', type: 'number', className: 'htRight', width: 80, id: true },
+  { data: 'srcType', type: 'select', className: 'htCenter', width: 130 }, // 검색: 입력소스 선택
+  { data: 'orderDate', type: 'date', className: 'htCenter', width: 100, format: 'YYYY-MM-DD' },
   { data: 'orderChannel', type: 'select', className: '', width: 120 }, // 검색: 판매채널 목록(사용 Y) 선택
   { data: 'orderType', type: 'text', className: '', width: 120 },
-  { data: 'orderNo', type: 'text', className: '', width: 120 },
-  { data: 'orderItemNo', type: 'text', className: '', width: 120 },
-  { data: 'ordererName', type: 'text', className: '', width: 120 },
+  { data: 'orderNo', type: 'text', className: '', width: 150 },
+  { data: 'ordererName', type: 'text', className: '', width: 100 },
   { data: 'ordererTel', type: 'text', className: '', width: 120 },
   { data: 'ordererMobile', type: 'text', className: '', width: 120 },
-  { data: 'receiverName', type: 'text', className: '', width: 120 },
+  { data: 'receiverName', type: 'text', className: '', width: 100 },
   { data: 'receiverTel', type: 'text', className: '', width: 120 },
   { data: 'receiverMobile', type: 'text', className: '', width: 120 },
   { data: 'receiverZipcode', type: 'text', className: '', width: 90 },
-  { data: 'receiverAddress', type: 'text', className: '', width: 220 },
-  { data: 'productName', type: 'text', className: '', width: 220 },
-  { data: 'optionInfo', type: 'text', className: '', width: 220 },
-  { data: 'quantity', type: 'number', className: 'htRight', width: 90 },
-  { data: 'orderMessage', type: 'text', className: '', width: 220 },
-  { data: 'invoiceNo', type: 'text', className: '', width: 120 },
-  { data: 'orderStatus', type: 'text', className: '', width: 120 },
-  { data: 'ownProductCode', type: 'code', className: 'htCenter', width: 100, codeGroup: 'OWN_PRODUCT_CODE' },
-  { data: 'maker', type: 'text', className: '', width: 220 },
+  { data: 'receiverAddress', type: 'text', className: '', width: 260 },
+  { data: 'memo', type: 'text', className: '', width: 200 },
+  { data: 'productCode', type: 'text', className: '', width: 110 },
+  { data: 'quantity', type: 'number', className: 'htRight', width: 70 },
+  { data: 'productName', type: 'text', className: '', width: 240 },
+  { data: 'optionInfo', type: 'text', className: '', width: 200 },
+  { data: 'settlementAmount', type: 'number', className: 'htRight', width: 90 },
+  { data: 'paymentAmount', type: 'number', className: 'htRight', width: 90 },
   { data: 'brandName', type: 'text', className: '', width: 120 },
-  { data: 'paymentMethod', type: 'text', className: '', width: 120 },
-  { data: 'shopType', type: 'text', className: '', width: 120 },
-  { data: 'mobileAppDiscountAmount', type: 'number', className: 'htRight', width: 90 },
-  { data: 'orderSeq', type: 'text', className: '', width: 90 },
-  { data: 'hsCode', type: 'code', className: 'htCenter', width: 100, codeGroup: 'HS_CODE' },
-  { data: 'shoplinkerOrderNo', type: 'text', className: '', width: 120 },
-  { data: 'clientCompany', type: 'text', className: '', width: 220 },
-  { data: 'productCode', type: 'code', className: 'htCenter', width: 100, codeGroup: 'PRODUCT_CODE' },
-  { data: 'mallProductCode', type: 'code', className: 'htCenter', width: 100, codeGroup: 'MALL_PRODUCT_CODE' },
-  { data: 'clientProductCode', type: 'code', className: 'htCenter', width: 100, codeGroup: 'CLIENT_PRODUCT_CODE' },
-  { data: 'shippingPayment', type: 'text', className: '', width: 120 },
-  { data: 'mallSalePrice', type: 'number', className: 'htRight', width: 90 },
-  { data: 'expectedSettlementAmount', type: 'number', className: 'htRight', width: 90 },
-  { data: 'orderAmount', type: 'number', className: 'htRight', width: 90 },
-  { data: 'combinedPackageNo', type: 'text', className: '', width: 120 },
-  { data: 'mallId', type: 'text', className: '', width: 120 },
+  { data: 'maker', type: 'text', className: '', width: 160 },
   // 전송여부: TB_ORDER / TB_ORDER_ITEM 으로 이관되면 'Y'. 검색 기본값 'N' (아직 이관 안 된 원본)
   { data: 'transferYn', type: 'select', className: 'htCenter', width: 70, default: 'N',  searchInline: true },
 ];
@@ -591,24 +602,19 @@ const DEFAULT_SEARCH = {
   pageSize: 20,
   sort1: 'rawId:asc',
   sort2: '',
-  orderSource: '', // '' 전체 / 'SHOPLINKER' 샵링커 / 'OWN_MALL' 자사몰
+  orderSource: '', // '' 전체 / 입력소스(SRC_TYPE) 값 — XLS_SHOPLINKER / XLS_SHOP_NAVER / XLS_SHOP
 };
 
-/** 주문구분 선택지. 첫 항목 '전체' 는 값 없음 */
+/** 주문구분 선택지 = 입력소스(SRC_TYPE). 첫 항목 '전체' 는 값 없음 */
 const orderSourceOptions = computed(() => [
   { value: '', label: t('common.all') },
-  { value: 'OWN_MALL', label: t('field.orderSourceOwnMall') },
-  { value: 'SHOPLINKER', label: t('field.orderSourceShoplinker') },
+  { value: 'XLS_SHOPLINKER', label: t('field.orderSourceXlsShoplinker') },
+  { value: 'XLS_SHOP_NAVER', label: t('field.orderSourceXlsShopNaver') },
+  { value: 'XLS_SHOP', label: t('field.orderSourceXlsShop') },
 ]);
 
-/** 샵링커 주문 = 샵링커주문번호(SHOPLINKER_ORDER_NO) 값이 있음. 없음(null·키 없음·빈 문자열) 이면 자사몰 */
-const hasShoplinkerOrderNo = (row) => String(row.shoplinkerOrderNo ?? '').trim() !== '';
-
-const matchOrderSource = (row) => {
-  if (search.orderSource === 'SHOPLINKER') return hasShoplinkerOrderNo(row);
-  if (search.orderSource === 'OWN_MALL') return !hasShoplinkerOrderNo(row);
-  return true;
-};
+/** 주문구분: 입력소스가 정확히 같은 행만 (서버도 같은 조건으로 거른다 — OrderRawService.buildPredicate) */
+const matchOrderSource = (row) => !search.orderSource || String(row.srcType ?? '') === search.orderSource;
 
 const search = reactive({ ...DEFAULT_SEARCH });
 
@@ -746,12 +752,19 @@ const decorate = (rows, startNo) =>
     rows.map((row, index) => {
       const view = { ...row, no: startNo + index, checked: checkedOrderNos.has(orderNoOf(row)) };
       FIELDS.forEach((f) => {
-        if (f.type === 'date') view[f.data] = toDate(row[f.data])?.format('YYYY-MM-DD HH:mm:ss') ?? '';
+        if (f.type === 'date') view[f.data] = toDate(row[f.data])?.format(f.format || 'YYYY-MM-DD HH:mm:ss') ?? '';
       });
       return markRaw(view);
     });
 
 const getHot = () => (hot && !hot.isDestroyed ? hot : null);
+
+/**
+ * 품번이 상품마스터에 없는 행인지 (OrderRaw.PRODUCT_CODE ≠ TB_PRODUCT.PRODUCT_CD) → 빨간 계열로 표시.
+ * 서버는 상품마스터에 있는 품번 행에만 product 를 함께 보낸다 (OrderRaw.product, @NotFound IGNORE).
+ * 엑셀 미리보기 행(rawId 없음)은 아직 상품마스터와 맞춰 보지 않았으므로 표시하지 않는다.
+ */
+const isUnmatchedProduct = (row) => !!row && !!row.rawId && !row.product;
 
 const onAfterSelection = function (row, _col, row2) {
   activeRange.start = row < 0 ? -1 : Math.min(row, row2);
@@ -848,6 +861,7 @@ const createGrid = () => {
         rowHeaders: false,
         manualColumnResize: true,
         fillHandle: false,
+        wordWrap: false, // 긴 값(주소·상품명·옵션)도 한 줄로 → 행 높이 고정 (PgProduct 와 같다)
         imeFastEdit: false,
         autoRowSize: false,
         autoColumnSize: false,
@@ -860,12 +874,21 @@ const createGrid = () => {
           th.querySelector('.colHeader').innerHTML = `<input type="checkbox" class="order-raw-check-all"${isPageAllChecked() ? ' checked' : ''}>`;
         },
         afterChange: onAfterChange,
+        // 품번 미매칭 행이 있는 주문은 체크박스를 누를 수 없다 (이관 대상에서 제외)
+        cells(row, col, prop) {
+          return prop === 'checked' ? { readOnly: isBlocked(pageRows[row]) } : {};
+        },
         beforeRenderer(td, row) {
           if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
             td.classList.add('active-row-cell');
           } else {
             td.classList.remove('active-row-cell');
           }
+        },
+        // 품번 미매칭 행은 모든 칸(체크박스·순번·숫자·코드 칸 포함)을 빨간 계열로.
+        // 렌더러가 td 클래스를 다시 쓰므로 렌더가 끝난 뒤(afterRenderer) 붙인다
+        afterRenderer(td, row) {
+          td.classList.toggle('unmatched-row-cell', isUnmatchedProduct(pageRows[row]));
         },
         beforeBeginEditing() {
           return false;
@@ -886,6 +909,7 @@ const destroyGrid = () => {
 };
 
 const renderPage = () => {
+  refreshBlocked();
   const size = search.pageSize;
   const totalPages = Math.max(1, Math.ceil(filtered.value.length / size));
   if (page.current > totalPages) page.current = totalPages;
@@ -1100,6 +1124,15 @@ onBeforeUnmount(() => {
   grid-column: 1 / -1;
 }
 
+/* 주문구분 줄 오른쪽: 엑셀·API 가져오기 버튼 */
+.order-raw-search__import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .order-raw-search {
   display: flex;
   flex-direction: column;
@@ -1163,6 +1196,12 @@ onBeforeUnmount(() => {
 
 .order-raw-grid__host {
   height: 100%;
+}
+
+/* 품번(PRODUCT_CODE)이 상품마스터(TB_PRODUCT.PRODUCT_CD)에 없는 행 */
+.order-raw-grid :deep(.unmatched-row-cell) {
+  /* 배경만 바꾼다(글자색은 그대로). 테마의 칸 배경보다 우선, 아래 선택 행(active-row-cell) 규칙이 뒤에 있어 선택하면 파란색이 이긴다 */
+  background: #fff1f0 !important;
 }
 
 .order-raw-grid :deep(.active-row-cell) {

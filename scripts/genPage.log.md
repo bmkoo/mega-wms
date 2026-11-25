@@ -666,3 +666,25 @@
 ```
 
 </details>
+
+## 2026-11-25 13:58:58 · ⚠️ 일부 중단
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/OrderRaw.java --menu BMKOO_L2_MENU --code-status --popup --api-name OrderRaw`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 추가 1 · 중단 1
+- 중단된 엔티티: OrderRaw
+- 오류: 중단된 엔티티: OrderRaw
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ OrderRaw (주문내역-초기) — 필드 24개
+  추가   apiFunctions.OrderRaw() → GET v1/orderRaw
+  중단   apiFunctions.onApiGetOrderRaw() 가 이미 다른 주소(v1/orderRawList/${id})를 씁니다.
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+
+중단된 엔티티: OrderRaw
+```
+
+</details>
