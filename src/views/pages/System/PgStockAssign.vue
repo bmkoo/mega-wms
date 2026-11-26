@@ -7,6 +7,10 @@
           <template #icon><SearchOutlined /></template>
           {{ $t('common.search') }}
         </a-button>
+        <a-button size="small" @click="onOpenBoxSplit">
+          <template #icon><PartitionOutlined /></template>
+          {{ $t('common.boxSplitQtyBox') }}
+        </a-button>
       </div>
       <div class="sa-toolbar__utils">
         <a-tooltip :title="$t('common.excelDownload')">
@@ -91,9 +95,14 @@ import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import Handsontable from 'handsontable';
+import { registerAllModules } from 'handsontable/registry';
 import 'handsontable/styles/handsontable.css';
 import 'handsontable/styles/ht-theme-main.css';
 import commonFunction from '@/common/utils/commonFunction';
+import { boxSplitUrl, openBoxSplitWindow } from './orderBoxSplitPopup';
+import { FORM_CHANNEL, formUrl, openFormWindow, stashFormPayload } from './orderItemPopup';
+
+registerAllModules();
 
 const { proxy } = getCurrentInstance();
 const { t } = useI18n();
@@ -102,33 +111,47 @@ defineOptions({ name: 'PgStockAssign' });
 
 const queryApi = (params) => proxy.$api.onApiQueryStockAssign(params);
 
-/** 그리드 컬럼 = 쿼리 SELECT 순서. label 이 있으면 i18n field.<label>, 없으면 field.<data> */
+/** 같은 orderId 행에서 병합할 주문 단위 컬럼 (PgOrderItem 스타일) */
+const ORDER_MERGE_FIELDS = [
+  'orderId',
+  'orderNo',
+  'channelId',
+  'orderDate',
+  'ordererNm',
+  'receiverNm',
+  'itemCount',
+  'paidAmount',
+  'billAmount',
+];
+
+/** 그리드 컬럼 = 쿼리 SELECT 순서. label 이 있으면 i18n field.<label>, 없으면 field.<data>
+ *  품번/상품명만 좌측, 주문 병합 컬럼은 htMiddle, 나머지는 가운데 (PgOrderItem 과 동일) */
 const FIELDS = [
   // 주문 (TB_ORDER)
-  { data: 'orderId', type: 'number', className: 'htRight', width: 80, id: true },
-  { data: 'orderNo', type: 'text', className: '', width: 130 },
-  { data: 'channelId', type: 'text', className: '', width: 90 },
-  { data: 'orderDate', type: 'date', className: 'htCenter', width: 100 },
-  { data: 'ordererNm', type: 'text', className: '', width: 90 },
-  { data: 'receiverNm', type: 'text', className: '', width: 90 },
-  { data: 'itemCount', type: 'number', className: 'htRight', width: 70 },
-  { data: 'paidAmount', type: 'number', className: 'htRight', width: 90 },
-  { data: 'billAmount', type: 'number', className: 'htRight', width: 90 },
+  { data: 'orderId', type: 'number', className: 'htCenter htMiddle', width: 80, id: true },
+  { data: 'orderNo', type: 'text', className: 'htCenter htMiddle', width: 130 },
+  { data: 'channelId', type: 'text', className: 'htCenter htMiddle', width: 90 },
+  { data: 'orderDate', type: 'date', className: 'htCenter htMiddle', width: 100 },
+  { data: 'ordererNm', type: 'text', className: 'htCenter htMiddle', width: 90 },
+  { data: 'receiverNm', type: 'text', className: 'htCenter htMiddle', width: 90 },
+  { data: 'itemCount', type: 'number', className: 'htCenter htMiddle', width: 70 },
+  { data: 'paidAmount', type: 'number', className: 'htCenter htMiddle', width: 90 },
+  { data: 'billAmount', type: 'number', className: 'htCenter htMiddle', width: 90 },
   // 주문 품목 (TB_ORDER_ITEM)
-  { data: 'lineNo', type: 'number', className: 'htRight', width: 60, id: true },
+  { data: 'lineNo', type: 'number', className: 'htCenter', width: 60, id: true },
   { data: 'productCd', type: 'text', className: '', width: 110 },
   { data: 'orderProductNm', type: 'text', className: '', width: 220 },
-  { data: 'qty', type: 'number', className: 'htRight', width: 60 },
-  { data: 'recipientNm', type: 'text', className: '', width: 90 },
+  { data: 'qty', type: 'number', className: 'htCenter', width: 60 },
+  { data: 'recipientNm', type: 'text', className: 'htCenter', width: 90 },
   { data: 'isAssign', type: 'text', className: 'htCenter', width: 80 },
   { data: 'deliveryStatus', type: 'text', className: 'htCenter', width: 80 },
-  { data: 'shippingNo', type: 'text', className: '', width: 110 },
+  { data: 'shippingNo', type: 'text', className: 'htCenter', width: 110 },
   // 상품 마스터 (TB_PRODUCT) — 매칭되지 않으면 빈 값
   { data: 'productNm', label: 'masterProductNm', type: 'text', className: '', width: 200 },
-  { data: 'barcode', type: 'text', className: '', width: 120 },
-  { data: 'brandCd', type: 'text', className: '', width: 80 },
-  { data: 'salePrice', type: 'number', className: 'htRight', width: 80 },
-  { data: 'costPrice', type: 'number', className: 'htRight', width: 80 },
+  { data: 'barcode', type: 'text', className: 'htCenter', width: 120 },
+  { data: 'brandCd', type: 'text', className: 'htCenter', width: 80 },
+  { data: 'salePrice', type: 'number', className: 'htCenter', width: 80 },
+  { data: 'costPrice', type: 'number', className: 'htCenter', width: 80 },
   { data: 'setYn', type: 'text', className: 'htCenter', width: 60 },
   { data: 'productStatusCode', type: 'text', className: 'htCenter', width: 80 },
   { data: 'stockStatusCode', type: 'text', className: 'htCenter', width: 80 },
@@ -162,6 +185,11 @@ const rowsAll = ref([]);
 
 let hot = null;
 const activeRange = { start: -1, end: -1 };
+let gridLayout = {
+  merges: [],
+  orderEndRows: new Set(),
+  mergedOrderEndCells: new Set(),
+};
 
 const DEFAULT_SEARCH = { pageSize: 50 };
 const search = reactive({ ...DEFAULT_SEARCH });
@@ -228,13 +256,108 @@ const decorate = (rows, startNo) =>
 
 const getHot = () => (hot && !hot.isDestroyed ? hot : null);
 
+/** 잘린 셀의 전체 값을 브라우저 기본 툴팁으로 보여준다 */
+const setCellTooltip = (td) => {
+  const text = String(td.textContent || '').trim();
+  if (text) td.title = text;
+  else td.removeAttribute('title');
+};
+
+const textRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+  setCellTooltip(td);
+};
+
 /** 숫자 컬럼은 1000 단위 콤마 (@Id 성격 컬럼 제외) */
 const commaRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, commonFunction.fncComma(value), cellProperties]);
+  setCellTooltip(td);
 };
 
 /** 상품마스터에 없는 품목 행은 표시해서 바로 보이게 한다 */
 const isUnmatched = (row) => getHot()?.getSourceDataAtRow(row)?.productMatchedYn === 'N';
+
+/** 같은 orderId 행의 주문 컬럼 병합 + 주문 끝 구분선 위치 (PgOrderItem 과 동일) */
+const buildGridLayout = (rows, nextPageRow) => {
+  const merges = [];
+  const orderEndRows = new Set();
+  const mergedOrderEndCells = new Set();
+  const mergeCols = ORDER_MERGE_FIELDS.map((data) => FIELDS.findIndex((f) => f.data === data) + 1).filter((col) => col > 0);
+
+  for (let start = 0; start < rows.length; ) {
+    let end = start + 1;
+    while (end < rows.length && String(rows[end].orderId ?? '') === String(rows[start].orderId ?? '')) {
+      end += 1;
+    }
+    const rowspan = end - start;
+    if (rowspan > 1) {
+      mergeCols.forEach((col) => merges.push({ row: start, col, rowspan, colspan: 1 }));
+    }
+    const next = rows[end] || nextPageRow;
+    const endsOrder = !next || String(next.orderId ?? '') !== String(rows[start].orderId ?? '');
+    if (endsOrder) {
+      mergeCols.forEach((col) => mergedOrderEndCells.add(`${start}:${col}`));
+    }
+    start = end;
+  }
+
+  rows.forEach((row, index) => {
+    const next = rows[index + 1] || nextPageRow;
+    if (!next || String(next.orderId ?? '') !== String(row.orderId ?? '')) orderEndRows.add(index);
+  });
+
+  return { merges, orderEndRows, mergedOrderEndCells };
+};
+
+let formChannel = null;
+
+/** 주문품목 상세 팝업에서 저장하면 목록을 다시 조회한다 */
+const onFormMessage = (event) => {
+  if (event.origin && event.origin !== window.location.origin) return;
+  if (event.data?.type !== 'orderItem-saved') return;
+  message.success(t('message.saved'));
+  onSearch();
+};
+
+/** 주문번호 클릭 / 행 더블클릭 → PgOrderItemForm 팝업 */
+const openForm = (row) => {
+  if (!row?.orderId) return;
+  const token = stashFormPayload({ row });
+  const popup = openFormWindow(formUrl({ id: row.orderId, token }));
+  if (!popup) message.warning(t('message.popupBlocked'));
+};
+
+const detailLinkRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+  td.classList.add('sa-detail-link');
+  setCellTooltip(td);
+};
+
+/** 주문번호 클릭 시 드래그 선택 없이 팝업만 연다 */
+const onGridMouseDownCapture = (event) => {
+  if (event.button !== 0) return;
+  const td = event.target?.closest?.('td');
+  if (!td || !td.classList.contains('sa-detail-link') || !gridWrapRef.value?.contains(td)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  event.isImmediatePropagationEnabled = false;
+
+  const instance = getHot();
+  const coords = instance?.getCoords(td);
+  if (!coords || coords.row < 0) return;
+  openForm(instance.getSourceDataAtRow(coords.row));
+};
+
+/** 어느 셀이든 더블클릭하면 해당 행 주문의 주문품목 수정 팝업을 연다 */
+const onGridDoubleClick = (event) => {
+  const td = event.target?.closest?.('td');
+  if (!td || td.classList.contains('sa-detail-link') || !gridWrapRef.value?.contains(td)) return;
+  const instance = getHot();
+  const coords = instance?.getCoords(td);
+  if (!coords || coords.row < 0) return;
+  openForm(instance.getSourceDataAtRow(coords.row));
+};
 
 const createGrid = () => {
   const host = hotHostRef.value;
@@ -246,27 +369,45 @@ const createGrid = () => {
       data: [],
       colHeaders: [t('field.seq'), ...FIELDS.map(labelOf)],
       columns: [
-        { data: 'no', className: 'htCenter' },
+        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: textRenderer },
         ...FIELDS.map((f) => ({
           data: f.data,
           className: f.className,
-          ...(f.type === 'number' && !f.id ? { renderer: commaRenderer } : {}),
+          readOnly: true,
+          editor: false,
+          renderer:
+            f.data === 'orderNo'
+              ? detailLinkRenderer
+              : f.type === 'number' && !f.id
+                ? commaRenderer
+                : textRenderer,
         })),
       ],
       colWidths: [50, ...FIELDS.map((f) => f.width)],
       height: Math.max(120, gridWrapRef.value?.clientHeight || 400),
       width: '100%',
+      stretchH: 'all',
       rowHeaders: false,
       fixedColumnsStart: 3,
       manualColumnResize: true,
+      mergeCells: [],
       fillHandle: false,
+      wordWrap: false,
       autoRowSize: false,
       autoColumnSize: false,
       readOnly: true,
       licenseKey: 'non-commercial-and-evaluation',
-      beforeRenderer(td, row) {
+      // TextRenderer 가 className 을 덮어쓰므로 행 강조는 afterRenderer 에서 다시 넣는다
+      afterRenderer(td, row, col) {
         td.classList.toggle('active-row-cell', activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end);
         td.classList.toggle('unmatched-row-cell', isUnmatched(row));
+        const mergeCols = new Set(
+          ORDER_MERGE_FIELDS.map((data) => FIELDS.findIndex((f) => f.data === data) + 1).filter((c) => c > 0)
+        );
+        const isOrderEnd = mergeCols.has(col)
+          ? gridLayout.mergedOrderEndCells.has(`${row}:${col}`)
+          : gridLayout.orderEndRows.has(row);
+        td.classList.toggle('order-group-end', isOrderEnd);
       },
       beforeBeginEditing() {
         return false;
@@ -274,12 +415,18 @@ const createGrid = () => {
       afterSelection(row, _col, row2) {
         activeRange.start = row < 0 ? -1 : Math.min(row, row2);
         activeRange.end = row < 0 ? -1 : Math.max(row, row2);
+        getHot()?.render();
       },
     })
   );
+
+  gridWrapRef.value?.addEventListener('mousedown', onGridMouseDownCapture, true);
+  gridWrapRef.value?.addEventListener('dblclick', onGridDoubleClick);
 };
 
 const destroyGrid = () => {
+  gridWrapRef.value?.removeEventListener('mousedown', onGridMouseDownCapture, true);
+  gridWrapRef.value?.removeEventListener('dblclick', onGridDoubleClick);
   if (hot && !hot.isDestroyed) hot.destroy();
   hot = null;
 };
@@ -291,9 +438,13 @@ const renderPage = () => {
   page.total = rowsAll.value.length;
   page.totalPages = totalPages;
   const start = (page.current - 1) * size;
+  const rows = decorate(rowsAll.value.slice(start, start + size), start + 1);
+  gridLayout = buildGridLayout(rows, rowsAll.value[start + size]);
+  const instance = getHot();
+  instance?.loadData(rows);
+  instance?.updateSettings({ mergeCells: gridLayout.merges });
   activeRange.start = -1;
   activeRange.end = -1;
-  getHot()?.loadData(decorate(rowsAll.value.slice(start, start + size), start + 1));
 };
 
 const onSearch = async () => {
@@ -337,6 +488,12 @@ const onExcel = () => {
 
 const onPrint = () => window.print();
 
+/** 박스분리 팝업은 열릴 때와 조회 버튼을 누를 때 직접 서버에서 조회한다 */
+const onOpenBoxSplit = () => {
+  const popup = openBoxSplitWindow(boxSplitUrl());
+  if (!popup) message.warning(t('message.popupBlocked'));
+};
+
 const measureGrid = () => {
   const el = gridWrapRef.value;
   const instance = getHot();
@@ -352,6 +509,11 @@ onMounted(() => {
   measureGrid();
   onSearch();
   window.addEventListener('resize', measureGrid);
+  window.addEventListener('message', onFormMessage);
+  if ('BroadcastChannel' in window) {
+    formChannel = new BroadcastChannel(FORM_CHANNEL);
+    formChannel.onmessage = (event) => onFormMessage(event);
+  }
 });
 
 onActivated(() => {
@@ -361,6 +523,9 @@ onActivated(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureGrid);
+  window.removeEventListener('message', onFormMessage);
+  formChannel?.close();
+  formChannel = null;
   destroyGrid();
 });
 </script>
@@ -498,12 +663,48 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-.sa-grid :deep(.unmatched-row-cell) {
-  background: #fff4e5;
+.sa-grid :deep(.ht_clone_top th),
+.sa-grid :deep(.ht_master thead th) {
+  background: #d6e7f5;
+  color: #1e4e79;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
 }
 
-.sa-grid :deep(.active-row-cell) {
+/* 고정 컬럼 헤더만 조금 더 진한 파랑으로 구분 */
+.sa-grid :deep(.ht_clone_top_left_corner th) {
+  background: #9fc0de !important;
+  color: #0d3558 !important;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.sa-grid :deep(td.unmatched-row-cell),
+.sa-grid :deep(.ht_clone_left td.unmatched-row-cell) {
+  background: #fff4e5 !important;
+}
+
+.sa-grid :deep(td.active-row-cell),
+.sa-grid :deep(.ht_clone_left td.active-row-cell) {
   background: #d9edf7 !important;
+}
+
+.sa-grid :deep(td.order-group-end) {
+  border-bottom: 1px solid #7fa8c5 !important;
+}
+
+.sa-grid :deep(td.sa-detail-link) {
+  color: #1e5aa8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sa-grid :deep(td.sa-detail-link:hover) {
+  color: #c41d3a !important;
 }
 
 .sa-grid :deep(.wtBorder) {

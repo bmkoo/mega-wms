@@ -148,6 +148,18 @@ body {
     font-size: 13px;
 }
 
+/* 모든 Handsontable 본문 셀과 컬럼·행 헤더의 글자 크기를 통일한다. */
+.ht-theme-main {
+    --ht-font-size: 13px;
+}
+
+.handsontable td,
+.handsontable th,
+.handsontable span.colHeader,
+.handsontable span.rowHeader {
+    font-size: 13px !important;
+}
+
 .font-15 {
     font-size: 15px;
 }

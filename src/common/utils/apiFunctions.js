@@ -407,6 +407,11 @@ class apiFunctions {
         return this.fncPostApi('v1/orderRaw/save', data);
     }
 
+    /** 주문원본 목록 수정: OrderRawController PUT /api/v1/orderRaw */
+    onApiUpdateOrderRaw(data) {
+        return this.fncPutApi('v1/orderRaw', data);
+    }
+
     /** 주문 원본(OrderRaw) 데이터 이관. body = 주문원본 화면의 현재 조회 조건 */
     onApiOrderRawMove(data) {
         return this.fncPostApi('v1/orderRawMove', data);
@@ -460,7 +465,7 @@ class apiFunctions {
     }
 
     onApiSaveOrderItem(data) {
-        return this.fncPostApi('v1/orderItem/save', data);
+        return this.fncPutApi('v1/orderItem', data);
     }
 
     /** 재고할당: 주문 + 주문품목 + 상품마스터 (품목 1개 = 1행). params = 화면 검색 조건 */

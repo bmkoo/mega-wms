@@ -237,6 +237,17 @@ const routes = [
                 },
             },
             {
+                path: 'order-box-split',
+                name: 'orderBoxSplit',
+                component: () => import('@/views/pages/System/PgOrderBoxSplit.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'common.boxSplitQtyBox',
+                    popup: true,
+                },
+            },
+            {
                 path: 'api-log',
                 name: 'apiLogForm',
                 component: () => import('@/views/pages/System/PgApiLogForm.vue'),

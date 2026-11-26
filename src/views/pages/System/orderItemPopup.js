@@ -41,8 +41,8 @@ export function openFormWindow(href) {
     return window;
   }
 
-  const width = 720;
-  const height = 720;
+  const width = 1200;
+  const height = 780;
   const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
   const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
   const features = [

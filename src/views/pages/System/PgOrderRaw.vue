@@ -770,6 +770,8 @@ const isUnmatchedProduct = (row) => !!row && !!row.rawId && !row.product;
 const onAfterSelection = function (row, _col, row2) {
   activeRange.start = row < 0 ? -1 : Math.min(row, row2);
   activeRange.end = row < 0 ? -1 : Math.max(row, row2);
+  // active-row-cell 은 afterRenderer 에서 붙이므로 선택 변경 후 다시 그린다
+  getHot()?.render();
 };
 
 /** 숫자 컬럼은 1000 단위 콤마로 보여준다. 데이터는 숫자 그대로라 정렬·검색·엑셀에는 영향이 없다 */
@@ -860,6 +862,7 @@ const createGrid = () => {
         width: '100%',
         stretchH: 'all',
         rowHeaders: false,
+        fixedColumnsStart: 3,
         manualColumnResize: true,
         fillHandle: false,
         wordWrap: false, // 긴 값(주소·상품명·옵션)도 한 줄로 → 행 높이 고정 (PgProduct 와 같다)
@@ -879,16 +882,13 @@ const createGrid = () => {
         cells(row, col, prop) {
           return prop === 'checked' ? { readOnly: isBlocked(pageRows[row]) } : {};
         },
-        beforeRenderer(td, row) {
-          if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
-            td.classList.add('active-row-cell');
-          } else {
-            td.classList.remove('active-row-cell');
-          }
-        },
-        // 품번 미매칭 행은 모든 칸(체크박스·순번·숫자·코드 칸 포함)을 빨간 계열로.
-        // 렌더러가 td 클래스를 다시 쓰므로 렌더가 끝난 뒤(afterRenderer) 붙인다
+        // 렌더러가 td 클래스를 다시 쓰므로 행 강조는 afterRenderer 에서 붙인다
         afterRenderer(td, row) {
+          td.classList.toggle(
+            'active-row-cell',
+            activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end
+          );
+          // 품번 미매칭 행은 모든 칸을 빨간 계열로
           td.classList.toggle('unmatched-row-cell', isUnmatchedProduct(pageRows[row]));
         },
         beforeBeginEditing() {
@@ -987,7 +987,6 @@ const onExcel = () => {
 const onOpenWindow = () => {
   window.open(window.location.href, '_blank', 'noopener,noreferrer,width=1440,height=900');
 };
-
 const onPrint = () => window.print();
 
 const measureGrid = () => {
@@ -1200,12 +1199,14 @@ onBeforeUnmount(() => {
 }
 
 /* 품번(PRODUCT_CODE)이 상품마스터(TB_PRODUCT.PRODUCT_CD)에 없는 행 */
-.order-raw-grid :deep(.unmatched-row-cell) {
+.order-raw-grid :deep(td.unmatched-row-cell),
+.order-raw-grid :deep(.ht_clone_left td.unmatched-row-cell) {
   /* 배경만 바꾼다(글자색은 그대로). 테마의 칸 배경보다 우선, 아래 선택 행(active-row-cell) 규칙이 뒤에 있어 선택하면 파란색이 이긴다 */
   background: #fff1f0 !important;
 }
 
-.order-raw-grid :deep(.active-row-cell) {
+.order-raw-grid :deep(td.active-row-cell),
+.order-raw-grid :deep(.ht_clone_left td.active-row-cell) {
   background: #d9edf7 !important;
 }
 
@@ -1213,6 +1214,16 @@ onBeforeUnmount(() => {
   background: #d6e7f5;
   color: #1e4e79;
   font-weight: 700;
+}
+
+/* 고정 컬럼 헤더만 조금 더 진한 파랑으로 구분 */
+.order-raw-grid :deep(.ht_clone_top_left_corner th) {
+  background: #9fc0de !important;
+  color: #0d3558 !important;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .order-raw-grid :deep(.wtBorder) {

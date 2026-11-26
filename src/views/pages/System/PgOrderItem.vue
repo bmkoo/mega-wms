@@ -127,16 +127,16 @@ const ID_FIELDS = ['orderId', 'lineNo'];
 
 /** 엔티티 필드 → 그리드 컬럼 (헤더는 i18n field.<data>) */
 const FIELDS = [
-  { data: 'orderId', type: 'number', className: 'htRight', width: 90, id: true },
-  { data: 'lineNo', type: 'number', className: 'htRight', width: 90, id: true },
-  { data: 'recipientNm', type: 'text', className: '', width: 120 },
+  { data: 'orderId', type: 'number', className: 'htCenter htMiddle', width: 90, id: true },
+  { data: 'recipientNm', type: 'text', className: 'htCenter htMiddle', width: 120 },
+  { data: 'lineNo', type: 'number', className: 'htCenter', width: 90, id: true },
   { data: 'productCd', type: 'text', className: '', width: 120 },
   { data: 'productNm', type: 'text', className: '', width: 220 },
-  { data: 'qty', type: 'number', className: 'htRight', width: 90 },
-  { data: 'deliveryStatus', type: 'text', className: '', width: 90 },
-  { data: 'shippingNo', type: 'text', className: '', width: 120 },
-  { data: 'isAssign', type: 'text', className: '', width: 90 },
-  { data: 'lineNoSub', type: 'number', className: 'htRight', width: 90 },
+  { data: 'qty', type: 'number', className: 'htCenter', width: 90 },
+  { data: 'deliveryStatus', type: 'text', className: 'htCenter', width: 90 },
+  { data: 'shippingNo', type: 'text', className: 'htCenter', width: 120 },
+  { data: 'isAssign', type: 'text', className: 'htCenter', width: 90 },
+  { data: 'lineNoSub', type: 'number', className: 'htCenter', width: 90 },
 ];
 
 const gridWrapRef = ref(null);
@@ -145,6 +145,10 @@ const filtered = ref([]);
 
 let hot = null;
 const activeRange = { start: -1, end: -1 };
+let gridLayout = {
+  orderEndRows: new Set(),
+  mergedOrderEndCells: new Set(),
+};
 
 /** 정렬 값은 "<필드>:asc" / "<필드>:desc" */
 const DEFAULT_SEARCH = {
@@ -178,7 +182,7 @@ const sortOptions = computed(() => [
 ]);
 
 const pageSizeOptions = computed(() =>
-  [20, 50, 100, 500, 1000].map((n) => ({ value: n, label: t('common.perPage', { n }) }))
+  [100, 500, 1000].map((n) => ({ value: n, label: t('common.perPage', { n }) }))
 );
 
 const pageNumbers = computed(() => {
@@ -296,11 +300,26 @@ const getHot = () => (hot && !hot.isDestroyed ? hot : null);
 const onAfterSelection = function (row, _col, row2) {
   activeRange.start = row < 0 ? -1 : Math.min(row, row2);
   activeRange.end = row < 0 ? -1 : Math.max(row, row2);
+  // active-row-cell 은 afterRenderer 에서 붙이므로 선택 변경 후 다시 그린다
+  getHot()?.render();
+};
+
+/** 잘린 셀의 전체 값을 브라우저 기본 툴팁으로 보여준다. */
+const setCellTooltip = (td) => {
+  const text = String(td.textContent || '').trim();
+  if (text) td.title = text;
+  else td.removeAttribute('title');
+};
+
+const textRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+  Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
+  setCellTooltip(td);
 };
 
 /** 숫자 컬럼은 1000 단위 콤마로 보여준다. 데이터는 숫자 그대로라 정렬·검색·엑셀에는 영향이 없다 */
 const commaRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, commonFunction.fncComma(value), cellProperties]);
+  setCellTooltip(td);
 };
 
 /** 콤마를 붙일 숫자 컬럼인지 (@Id 숫자 필드는 제외) */
@@ -310,12 +329,59 @@ const isCommaField = (f) => f.type === 'number' && !f.id;
 const codeRendererOf = (f) =>
   function (instance, td, row, col, prop, value, cellProperties) {
     Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, codeName(f, value), cellProperties]);
+    setCellTooltip(td);
   };
 
-/** 순번 셀은 상세 팝업 링크로 보이게 한다 */
-const seqRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+/**
+ * 주문ID와 주문자(수령자)가 모두 같은 연속 행을 병합하고,
+ * 다음 행에서 주문ID가 바뀌는 주문의 마지막 행을 구한다.
+ */
+const buildGridLayout = (rows, nextPageRow) => {
+  const merges = [];
+  const orderEndRows = new Set();
+  const mergedOrderEndCells = new Set();
+
+  for (let start = 0; start < rows.length; ) {
+    let end = start + 1;
+    while (
+      end < rows.length &&
+      String(rows[end].orderId ?? '') === String(rows[start].orderId ?? '') &&
+      String(rows[end].recipientNm ?? '') === String(rows[start].recipientNm ?? '')
+    ) {
+      end += 1;
+    }
+
+    const rowspan = end - start;
+    if (rowspan > 1) {
+      merges.push(
+        { row: start, col: 1, rowspan, colspan: 1 },
+        { row: start, col: 2, rowspan, colspan: 1 }
+      );
+    }
+
+    const next = rows[end] || nextPageRow;
+    const endsOrder = !next || String(next.orderId ?? '') !== String(rows[start].orderId ?? '');
+    if (endsOrder) {
+      // 병합 셀은 시작 행의 td 하나가 전체 높이를 차지하므로 시작 셀에 아래 테두리를 준다.
+      mergedOrderEndCells.add(`${start}:1`);
+      mergedOrderEndCells.add(`${start}:2`);
+    }
+    start = end;
+  }
+
+  rows.forEach((row, index) => {
+    const next = rows[index + 1] || nextPageRow;
+    if (!next || String(next.orderId ?? '') !== String(row.orderId ?? '')) orderEndRows.add(index);
+  });
+
+  return { merges, orderEndRows, mergedOrderEndCells };
+};
+
+/** 주문ID 셀은 상세 팝업 링크로 보이게 한다. */
+const detailLinkRenderer = function (instance, td, row, col, prop, value, cellProperties) {
   Handsontable.renderers.TextRenderer.apply(this, [instance, td, row, col, prop, value, cellProperties]);
-  td.classList.add('order-item-seq-link');
+  td.classList.add('order-item-detail-link');
+  setCellTooltip(td);
 };
 
 const idOf = (row) => ID_FIELDS.map((key) => encodeURIComponent(String(row?.[key] ?? ''))).join(',');
@@ -338,16 +404,26 @@ const openForm = (row) => {
   if (!popup) message.warning(t('message.popupBlocked'));
 };
 
-/** Handsontable 선택 시작보다 먼저 가로채서, 순번 클릭 시 드래그 선택 없이 팝업만 연다 */
+/** Handsontable 선택 시작보다 먼저 가로채서, 주문ID 클릭 시 드래그 선택 없이 팝업만 연다. */
 const onGridMouseDownCapture = (event) => {
   if (event.button !== 0) return;
   const td = event.target?.closest?.('td');
-  if (!td || !td.classList.contains('order-item-seq-link') || !gridWrapRef.value?.contains(td)) return;
+  if (!td || !td.classList.contains('order-item-detail-link') || !gridWrapRef.value?.contains(td)) return;
 
   event.preventDefault();
   event.stopPropagation();
   event.isImmediatePropagationEnabled = false;
 
+  const instance = getHot();
+  const coords = instance?.getCoords(td);
+  if (!coords || coords.row < 0) return;
+  openForm(instance.getSourceDataAtRow(coords.row));
+};
+
+/** 어느 셀이든 더블클릭하면 해당 행 주문의 수정 팝업을 연다. 주문ID는 단일 클릭에서 이미 처리한다. */
+const onGridDoubleClick = (event) => {
+  const td = event.target?.closest?.('td');
+  if (!td || td.classList.contains('order-item-detail-link') || !gridWrapRef.value?.contains(td)) return;
   const instance = getHot();
   const coords = instance?.getCoords(td);
   if (!coords || coords.row < 0) return;
@@ -364,14 +440,16 @@ const createGrid = () => {
       data: [],
       colHeaders: [t('field.seq'), ...FIELDS.map((f) => t(`field.${f.data}`))],
       columns: [
-        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: seqRenderer },
+        { data: 'no', className: 'htCenter', readOnly: true, editor: false, renderer: textRenderer },
         ...FIELDS.map((f) => ({
           data: f.data,
           className: f.className,
           readOnly: true,
           editor: false,
+          renderer: textRenderer,
           ...(isCommaField(f) ? { renderer: commaRenderer } : {}),
           ...(f.type === 'code' ? { renderer: codeRendererOf(f) } : {}),
+          ...(f.data === 'orderId' ? { renderer: detailLinkRenderer } : {}),
         })),
       ],
       colWidths: [50, ...FIELDS.map((f) => f.width)],
@@ -379,19 +457,27 @@ const createGrid = () => {
       width: '100%',
       stretchH: 'all',
       rowHeaders: false,
+      fixedColumnsStart: 3,
       manualColumnResize: true,
+      mergeCells: [],
       fillHandle: false,
+      wordWrap: false,
       imeFastEdit: false,
       autoRowSize: false,
       autoColumnSize: false,
       readOnly: true,
       licenseKey: 'non-commercial-and-evaluation',
-      beforeRenderer(td, row) {
-        if (activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end) {
-          td.classList.add('active-row-cell');
-        } else {
-          td.classList.remove('active-row-cell');
-        }
+      // TextRenderer 가 className 을 덮어쓰므로 행 강조·구분선은 afterRenderer 에서 다시 넣는다
+      afterRenderer(td, row, col) {
+        td.classList.toggle(
+          'active-row-cell',
+          activeRange.start >= 0 && row >= activeRange.start && row <= activeRange.end
+        );
+        const isMergedColumn = col === 1 || col === 2;
+        const isOrderEnd = isMergedColumn
+          ? gridLayout.mergedOrderEndCells.has(`${row}:${col}`)
+          : gridLayout.orderEndRows.has(row);
+        td.classList.toggle('order-group-end', isOrderEnd);
       },
       beforeBeginEditing() {
         return false;
@@ -401,10 +487,12 @@ const createGrid = () => {
   );
 
   gridWrapRef.value?.addEventListener('mousedown', onGridMouseDownCapture, true);
+  gridWrapRef.value?.addEventListener('dblclick', onGridDoubleClick);
 };
 
 const destroyGrid = () => {
   gridWrapRef.value?.removeEventListener('mousedown', onGridMouseDownCapture, true);
+  gridWrapRef.value?.removeEventListener('dblclick', onGridDoubleClick);
   if (hot && !hot.isDestroyed) hot.destroy();
   hot = null;
 };
@@ -416,7 +504,11 @@ const renderPage = () => {
   page.total = filtered.value.length;
   page.totalPages = totalPages;
   const start = (page.current - 1) * size;
-  getHot()?.loadData(decorate(filtered.value.slice(start, start + size), start + 1));
+  const rows = decorate(filtered.value.slice(start, start + size), start + 1);
+  gridLayout = buildGridLayout(rows, filtered.value[start + size]);
+  const instance = getHot();
+  instance?.loadData(rows);
+  instance?.updateSettings({ mergeCells: gridLayout.merges });
   activeRange.start = -1;
   activeRange.end = -1;
 };
@@ -657,8 +749,13 @@ onBeforeUnmount(() => {
   height: 100%;
 }
 
-.order-item-grid :deep(.active-row-cell) {
+.order-item-grid :deep(td.active-row-cell),
+.order-item-grid :deep(.ht_clone_left td.active-row-cell) {
   background: #d9edf7 !important;
+}
+
+.order-item-grid :deep(td.order-group-end) {
+  border-bottom: 1px solid #7fa8c5 !important;
 }
 
 .order-item-grid :deep(.ht_clone_top th) {
@@ -667,17 +764,27 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
+/* 고정 컬럼 헤더만 조금 더 진한 파랑으로 구분 */
+.order-item-grid :deep(.ht_clone_top_left_corner th) {
+  background: #9fc0de !important;
+  color: #0d3558 !important;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
 .order-item-grid :deep(.wtBorder) {
   pointer-events: none;
 }
 
-.order-item-grid :deep(td.order-item-seq-link) {
+.order-item-grid :deep(td.order-item-detail-link) {
   color: #1e5aa8;
   text-decoration: underline;
   cursor: pointer;
 }
 
-.order-item-grid :deep(td.order-item-seq-link:hover) {
+.order-item-grid :deep(td.order-item-detail-link:hover) {
   color: #c41d3a !important;
 }
 

@@ -7,45 +7,82 @@
           <template #icon><SearchOutlined /></template>
           {{ $t('common.search') }}
         </a-button>
+        <a-button size="small" @click="toggleSearchPanel">
+          <template #icon>
+            <UpOutlined v-if="searchPanelOpen" />
+            <DownOutlined v-else />
+          </template>
+          {{ searchPanelOpen ? $t('common.collapseSearch') : $t('common.expandSearch') }}
+        </a-button>
       </div>
       <div class="order-transfer-toolbar__utils">
+        <a-tooltip :title="$t('common.excelDownload')">
+          <button type="button" class="order-transfer-icon-btn order-transfer-icon-btn--excel" @click="onExcel">
+            <FileExcelOutlined />
+          </button>
+        </a-tooltip>
         <a-tooltip :title="$t('common.reset')">
           <button type="button" class="order-transfer-icon-btn" @click="onReset">
             <UndoOutlined />
+          </button>
+        </a-tooltip>
+        <a-tooltip :title="$t('common.openNewWindow')">
+          <button type="button" class="order-transfer-icon-btn" @click="onOpenWindow">
+            <DesktopOutlined />
+          </button>
+        </a-tooltip>
+        <a-tooltip :title="$t('common.printPreview')">
+          <button type="button" class="order-transfer-icon-btn" @click="onPrint">
+            <PrinterOutlined />
           </button>
         </a-tooltip>
       </div>
     </div>
 
     <!-- 조회 조건: 서버(GET /api/v1/orderList) 에서 처리한다 -->
-    <div class="order-transfer-search">
-      <div class="order-transfer-search__item">
-        <span class="order-transfer-search__label">{{ $t('field.orderNo') }}</span>
-        <a-input v-model:value="search.orderNo" size="small" allow-clear @press-enter="onSearch" />
+    <div v-show="searchPanelOpen" class="order-transfer-search">
+      <div class="order-transfer-search__grid">
+        <div class="order-transfer-search__item">
+          <span class="order-transfer-search__label">{{ $t('field.orderNo') }}</span>
+          <a-input v-model:value="search.orderNo" size="small" allow-clear @press-enter="onSearch" />
+        </div>
+        <div class="order-transfer-search__item">
+          <span class="order-transfer-search__label" :title="$t('field.channelId')">{{ $t('field.channelId') }}</span>
+          <!-- 판매처는 서버에서 정확히 일치로 찾으므로, 실제 주문에 있는 판매처 목록에서 고른다 -->
+          <a-select
+            v-model:value="search.channelId"
+            :options="channelOptions"
+            size="small"
+            show-search
+            class="flex-1"
+            @change="onSearch"
+          />
+        </div>
+        <div class="order-transfer-search__item">
+          <span class="order-transfer-search__label">{{ $t('field.ordererNm') }}</span>
+          <a-input v-model:value="search.ordererNm" size="small" allow-clear @press-enter="onSearch" />
+        </div>
+        <div class="order-transfer-search__item">
+          <span class="order-transfer-search__label">{{ $t('field.receiverNm') }}</span>
+          <a-input v-model:value="search.receiverNm" size="small" allow-clear @press-enter="onSearch" />
+        </div>
+        <div class="order-transfer-search__item">
+          <span class="order-transfer-search__label">{{ $t('field.orderDate') }}</span>
+          <a-range-picker v-model:value="search.orderDate" size="small" format="YYYY-MM-DD" class="flex-1" />
+        </div>
       </div>
-      <div class="order-transfer-search__item">
-        <span class="order-transfer-search__label" :title="$t('field.channelId')">{{ $t('field.channelId') }}</span>
-        <!-- 판매처는 서버에서 정확히 일치로 찾으므로, 실제 주문에 있는 판매처 목록에서 고른다 -->
+      <div class="order-transfer-search__row">
         <a-select
-          v-model:value="search.channelId"
-          :options="channelOptions"
+          v-model:value="view.pageSize"
+          :options="pageSizeOptions"
           size="small"
-          show-search
-          class="flex-1"
-          @change="onSearch"
+          style="width: 110px"
+          @change="onPageSizeChange"
         />
-      </div>
-      <div class="order-transfer-search__item">
-        <span class="order-transfer-search__label">{{ $t('field.ordererNm') }}</span>
-        <a-input v-model:value="search.ordererNm" size="small" allow-clear @press-enter="onSearch" />
-      </div>
-      <div class="order-transfer-search__item">
-        <span class="order-transfer-search__label">{{ $t('field.receiverNm') }}</span>
-        <a-input v-model:value="search.receiverNm" size="small" allow-clear @press-enter="onSearch" />
-      </div>
-      <div class="order-transfer-search__item">
-        <span class="order-transfer-search__label">{{ $t('field.orderDate') }}</span>
-        <a-range-picker v-model:value="search.orderDate" size="small" format="YYYY-MM-DD" class="flex-1" />
+        <div class="flex-1" />
+        <span class="wms-search__label">{{ $t('field.sort') }}</span>
+        <a-select v-model:value="view.sort1" :options="sortOptions" size="small" style="width: 150px" @change="onSortChange" />
+        <a-select v-model:value="view.sort2" :options="sortOptions" size="small" style="width: 150px" @change="onSortChange" />
       </div>
     </div>
 
@@ -55,7 +92,7 @@
       <div class="order-transfer-panel order-transfer-panel--orders">
         <div class="order-transfer-panel__title">
           {{ $t('menu.order') }}
-          <span class="order-transfer-panel__count">{{ $t('common.totalItems', { n: $cf.fncComma(orders.length) }) }}</span>
+          <span class="order-transfer-panel__count">{{ $t('common.totalItems', { n: $cf.fncComma(page.total) }) }}</span>
         </div>
         <div ref="orderWrapRef" class="order-transfer-grid ht-theme-main">
           <div ref="orderHostRef" v-once />
@@ -78,6 +115,25 @@
         </div>
       </div>
     </div>
+
+    <div class="order-transfer-pager">
+      <div class="order-transfer-pager__nav">
+        <button type="button" :disabled="page.current <= 1" @click="goPage(1)">«</button>
+        <button type="button" :disabled="page.current <= 1" @click="goPage(page.current - 1)">‹</button>
+        <button
+          v-for="n in pageNumbers"
+          :key="n"
+          type="button"
+          :class="{ 'is-active': n === page.current }"
+          @click="goPage(n)"
+        >
+          {{ n }}
+        </button>
+        <button type="button" :disabled="page.current >= page.totalPages" @click="goPage(page.current + 1)">›</button>
+        <button type="button" :disabled="page.current >= page.totalPages" @click="goPage(page.totalPages)">»</button>
+      </div>
+      <span class="order-transfer-pager__total">{{ $t('common.totalItems', { n: $cf.fncComma(page.total) }) }}</span>
+    </div>
   </div>
 </template>
 
@@ -88,8 +144,9 @@
  *   주문:      apiFunctions.onApiGetOrder(params)          → GET v1/orderList     (조건은 서버에서 처리)
  *   주문 품목: apiFunctions.onApiGetOrderItem({ orderId })  → GET v1/orderItemList (orderId 로 서버에서 거름)
  */
-import { computed, getCurrentInstance, markRaw, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, markRaw, nextTick, onActivated, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { message } from 'ant-design-vue';
 import dayjs from 'dayjs';
 import Handsontable from 'handsontable';
 import 'handsontable/styles/handsontable.css';
@@ -133,6 +190,10 @@ const ITEM_COLUMNS = [
 
 const DEFAULT_SEARCH = { orderNo: '', channelId: '', ordererNm: '', receiverNm: '', orderDate: null };
 const search = reactive({ ...DEFAULT_SEARCH });
+const DEFAULT_VIEW = { pageSize: 20, sort1: 'orderId:desc', sort2: '' };
+const view = reactive({ ...DEFAULT_VIEW });
+const page = reactive({ current: 1, total: 0, totalPages: 1 });
+const searchPanelOpen = ref(true);
 
 const orderWrapRef = ref(null);
 const itemWrapRef = ref(null);
@@ -145,6 +206,21 @@ const channelOptions = computed(() => [
   { value: '', label: t('common.all') },
   ...channels.value.map((name) => ({ value: name, label: name })),
 ]);
+const sortOptions = computed(() => [
+  { value: '', label: '-' },
+  ...ORDER_COLUMNS.flatMap((column) => [
+    { value: `${column.data}:asc`, label: `${t(`field.${column.data}`)} ↑` },
+    { value: `${column.data}:desc`, label: `${t(`field.${column.data}`)} ↓` },
+  ]),
+]);
+const pageSizeOptions = computed(() =>
+  [20, 50, 100, 500, 1000].map((n) => ({ value: n, label: t('common.perPage', { n }) }))
+);
+const pageNumbers = computed(() => {
+  const start = Math.floor((page.current - 1) / 10) * 10 + 1;
+  const end = Math.min(start + 9, page.totalPages);
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+});
 const items = ref([]);
 const selectedOrder = ref(null);
 const orderLoading = ref(false);
@@ -185,6 +261,7 @@ const gridSettings = (columns) => ({
   width: '100%',
   height: 300,
   rowHeaders: false,
+  fixedColumnsStart: 3,
   readOnly: true,
   fillHandle: false,
   manualColumnResize: true,
@@ -247,6 +324,47 @@ const filterOrders = (rows, params) =>
     return true;
   });
 
+const columnByKey = Object.fromEntries(ORDER_COLUMNS.map((column) => [column.data, column]));
+
+/** 빈 값은 항상 뒤로 보내고, 컬럼 타입에 맞춰 두 단계로 정렬한다. */
+const compareBy = (sortValue) => {
+  const [key, direction] = sortValue.split(':');
+  const type = columnByKey[key]?.type;
+  const sign = direction === 'desc' ? -1 : 1;
+  const valueOf = (row) => {
+    const value = row[key];
+    if (value === null || value === undefined || value === '') return null;
+    if (type === 'number' || type === 'id') return Number(value);
+    if (type === 'date') return dayjs(Array.isArray(value) ? new Date(value[0], (value[1] || 1) - 1, value[2] || 1) : value).valueOf();
+    return String(value);
+  };
+  return (a, b) => {
+    const av = valueOf(a);
+    const bv = valueOf(b);
+    if (av === null || bv === null) return av === bv ? 0 : av === null ? 1 : -1;
+    const diff = typeof av === 'string' ? av.localeCompare(bv, 'ko') : av - bv;
+    return diff * sign;
+  };
+};
+
+const applySort = (rows) =>
+  [...rows].sort((a, b) => {
+    const first = view.sort1 ? compareBy(view.sort1)(a, b) : 0;
+    if (first !== 0 || !view.sort2 || view.sort2 === view.sort1) return first;
+    return compareBy(view.sort2)(a, b);
+  });
+
+const renderOrders = () => {
+  const totalPages = Math.max(1, Math.ceil(orders.value.length / view.pageSize));
+  if (page.current > totalPages) page.current = totalPages;
+  page.total = orders.value.length;
+  page.totalPages = totalPages;
+  const start = (page.current - 1) * view.pageSize;
+  getHot(orderHot)?.loadData(orders.value.slice(start, start + view.pageSize));
+  clearItems();
+  if (orders.value.length > start) getHot(orderHot)?.selectCell(0, 0);
+};
+
 const onSearch = async () => {
   orderLoading.value = true;
   try {
@@ -260,13 +378,9 @@ const onSearch = async () => {
         String(a).localeCompare(String(b), 'ko')
       );
     }
-    orders.value = filterOrders(Array.isArray(list) ? list : [], params).sort(
-      (a, b) => (Number(b.orderId) || 0) - (Number(a.orderId) || 0)
-    );
-    getHot(orderHot)?.loadData(orders.value);
-    clearItems();
-    // 첫 주문을 선택해서 상품 명세를 바로 보여준다
-    if (orders.value.length) getHot(orderHot)?.selectCell(0, 0);
+    orders.value = applySort(filterOrders(Array.isArray(list) ? list : [], params));
+    page.current = 1;
+    renderOrders();
   } finally {
     orderLoading.value = false;
   }
@@ -294,8 +408,51 @@ const loadItems = async (order) => {
 
 const onReset = () => {
   Object.assign(search, DEFAULT_SEARCH);
+  Object.assign(view, DEFAULT_VIEW);
   onSearch();
 };
+
+const onPageSizeChange = () => {
+  page.current = 1;
+  renderOrders();
+};
+
+const onSortChange = () => {
+  orders.value = applySort(orders.value);
+  page.current = 1;
+  renderOrders();
+};
+
+const goPage = (number) => {
+  const next = Math.min(Math.max(1, number), page.totalPages);
+  if (next === page.current) return;
+  page.current = next;
+  renderOrders();
+};
+
+const toggleSearchPanel = () => {
+  searchPanelOpen.value = !searchPanelOpen.value;
+  nextTick(fitGrids);
+};
+
+const onExcel = () => {
+  if (!orders.value.length) {
+    message.warning(t('common.noData'));
+    return;
+  }
+  const rows = orders.value.map((row) => ({
+    ...row,
+    orderDate: toDay(row.orderDate),
+  }));
+  commonFunction.fncExportExcel(
+    rows,
+    ORDER_COLUMNS.map((column) => ({ title: t(`field.${column.data}`), dataIndex: column.data })),
+    `${t('menu.orderTransfer')}_${dayjs().format('YYYYMMDD')}.xlsx`
+  );
+};
+
+const onOpenWindow = () => window.open(window.location.href, '_blank', 'noopener,noreferrer,width=1440,height=900');
+const onPrint = () => window.print();
 
 // ─────────────────────────────────────────────
 // 그리드
@@ -423,13 +580,29 @@ onBeforeUnmount(() => {
   background: #e8f1f8;
 }
 
+.order-transfer-icon-btn--excel {
+  color: #217346;
+}
+
 .order-transfer-search {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 8px 10px;
   background: #f3f6f8;
   border-bottom: 1px solid var(--wms-border);
+}
+
+.order-transfer-search__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 16px;
+}
+
+.order-transfer-search__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .order-transfer-search__item {
@@ -505,6 +678,16 @@ onBeforeUnmount(() => {
   --ht-cell-vertical-border-color: #c5d8ea;
 }
 
+/* 고정 컬럼 헤더만 조금 더 진한 파랑으로 구분 */
+.order-transfer-grid :deep(.ht_clone_top_left_corner th) {
+  background: #9fc0de !important;
+  color: #0d3558 !important;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* 조회 중 표시: 그리드 위에 겹쳐서 (그리드 크기에 영향 없음) */
 .order-transfer-loading {
   position: absolute;
@@ -519,5 +702,71 @@ onBeforeUnmount(() => {
 /* 선택한 주문 행 강조 */
 .order-transfer-grid :deep(td.is-current-row) {
   background: #d9edf7 !important;
+}
+
+.order-transfer-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--wms-border);
+  background: #f7f8fa;
+}
+
+.order-transfer-pager__nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.order-transfer-pager__nav button {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1e4e79;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.order-transfer-pager__nav button:hover:not(:disabled) {
+  border-color: #9bb8d3;
+  background: #e8f1f8;
+}
+
+.order-transfer-pager__nav button.is-active {
+  border-color: #3d6d99;
+  background: #d6e7f5;
+  font-weight: 700;
+}
+
+.order-transfer-pager__nav button:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.order-transfer-pager__total {
+  font-weight: 600;
+  color: var(--wms-text);
+}
+
+@media print {
+  .order-transfer-toolbar,
+  .order-transfer-search,
+  .order-transfer-pager {
+    display: none !important;
+  }
+
+  .order-transfer-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .order-transfer-body,
+  .order-transfer-grid {
+    overflow: visible;
+  }
 }
 </style>
