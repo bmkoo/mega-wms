@@ -488,6 +488,17 @@ class apiFunctions {
         return this.fncGetApi(`v1/apiLog/${id}`);
     }
 
+    onApiInventory(params) {
+        return this.fncGetApi('v1/inventoryList', params);
+    }
+
+    onApiGetInventory(id) {
+        return this.fncGetApi(`v1/inventory/${id}`);
+    }
+
+    onApiSaveInventory(data) {
+        return this.fncPostApi('v1/inventory/save', data);
+    }
 }
 
 export default new apiFunctions();

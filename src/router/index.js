@@ -247,6 +247,17 @@ const routes = [
                     popup: true,
                 },
             },
+            {
+                path: 'inventory',
+                name: 'inventoryForm',
+                component: () => import('@/views/pages/System/PgInventoryForm.vue'),
+                meta: {
+                    requiresAuth: true,
+                    role: [ROLE.ADMIN, ROLE.MANAGER],
+                    nameKey: 'menu.inventory',
+                    popup: true,
+                },
+            },
         ],
     },
     {

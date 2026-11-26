@@ -328,6 +328,11 @@ export default {
             resTruncatedYn: '원문 잘림',
             successYn: '성공 여부',
             errorMessage: '실패 사유',
+            currentQty: '현재고',
+            allocatedQty: '할당수량',
+            availableQty: '가용재고 (= 현재고 - 할당수량, 자동계산)',
+            prevMonthQty: '전월재고 (월마감 시 TB_INVENTORY_MONTHLY.END_QTY 로 갱신)',
+            safetyQty: '안전재고',
         },
 
         dash: {
@@ -653,6 +658,7 @@ export default {
             loginHistory: 'LoginHistory',
             productComponent: '상품 세트 구성품',
             channel: '판매채널',
+            inventory: '재고',
         },
     },
 
@@ -984,6 +990,11 @@ export default {
             resTruncatedYn: 'Res Truncated Yn',
             successYn: 'Success Yn',
             errorMessage: 'Error Message',
+            currentQty: 'Current Qty',
+            allocatedQty: 'Allocated Qty',
+            availableQty: 'Available Qty',
+            prevMonthQty: 'Prev Month Qty',
+            safetyQty: 'Safety Qty',
         },
 
         dash: {
@@ -1306,6 +1317,7 @@ export default {
             loginHistory: 'Login History',
             productComponent: 'Product Component',
             channel: 'Channel',
+            inventory: 'Inventory',
         },
     },
 };

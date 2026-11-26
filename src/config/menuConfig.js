@@ -170,6 +170,7 @@ export const MENUS = [
                     { path: 'stockAssign', nameKey: 'menu.stockAssign', component: 'System/PgStockAssign', roles: STAFF_ROLES },
                     { path: 'orderTransfer', nameKey: 'menu.orderTransfer', component: 'System/PgOrderTransfer', roles: STAFF_ROLES },
                     { path: 'apiLog', nameKey: 'menu.apiLog', component: 'System/PgApiLog', roles: STAFF_ROLES },
+                    { path: 'inventory', nameKey: 'menu.inventory', component: 'System/PgInventory', roles: STAFF_ROLES },
                 ],
             },
         ],

@@ -965,3 +965,94 @@
 ```
 
 </details>
+
+## 2026-11-26 17:28:43 · ⚠️ 일부 중단
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/Inventory.java --menu BMKOO_L2_MENU --popup --code-status --api-name onApiGetInventory`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/workspace-20260520/backend` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 추가 1 · 중단 1
+- 중단된 엔티티: Inventory
+- 오류: 중단된 엔티티: Inventory
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ Inventory (재고) — 필드 6개
+  추가   apiFunctions.onApiGetInventory() → GET v1/inventory
+  중단   apiFunctions.onApiGetInventory() 가 이미 다른 주소(v1/inventory)를 씁니다.
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+
+중단된 엔티티: Inventory
+```
+
+</details>
+
+## 2026-11-26 17:31:26 · ⚠️ 일부 중단
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/Inventory.java --menu BMKOO_L2_MENU --popup --code-status --api-name onApiGetInventory`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/workspace-20260520/backend` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 추가 1 · 중단 1
+- 중단된 엔티티: Inventory
+- 오류: 중단된 엔티티: Inventory
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ Inventory (재고) — 필드 6개
+  추가   apiFunctions.onApiGetInventory() → GET v1/inventory
+  중단   apiFunctions.onApiGetInventory() 가 이미 다른 주소(v1/inventory)를 씁니다.
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+
+중단된 엔티티: Inventory
+```
+
+</details>
+
+## 2026-11-26 17:33:53 · ✅ 완료
+
+- 명령: `node scripts/genPage.mjs /Users/bmkoo/IdeaProjects/workspace-20260520/backend/src/main/java/com/inno/axboot/admin/domain/mega/Inventory.java --menu BMKOO_L2_MENU --code-status --popup --api-name onApiInventory`
+- 실행 폴더: `/Users/bmkoo/IdeaProjects/i-wms-new` · 사용자: bmkoo · 소요: 0.0s
+- 요약: 엔티티 1 · 생성 3 · 추가 17 · 건너뜀 2
+- 바뀐 파일:
+  - `src/common/utils/apiFunctions.js`
+  - `src/router/index.js`
+  - `src/i18n/i18nData.js`
+  - `src/config/menuConfig.js`
+  - `src/views/pages/System/PgInventory.vue`
+  - `src/views/pages/System/PgInventoryForm.vue`
+  - `src/views/pages/System/inventoryPopup.js`
+
+<details><summary>상세 로그 (터미널 출력 전체)</summary>
+
+```
+■ Inventory (재고) — 필드 6개
+  추가   apiFunctions.onApiInventory() → GET v1/inventory
+  추가   apiFunctions.onApiGetInventory() → GET v1/inventory/${id}
+  추가   apiFunctions.onApiSaveInventory() → POST v1/inventory/save
+  건너뜀 [ko] field.productCd (기존: "품번")
+  추가   [ko] field.currentQty = "현재고"
+  추가   [ko] field.allocatedQty = "할당수량"
+  추가   [ko] field.availableQty = "가용재고 (= 현재고 - 할당수량, 자동계산)"
+  추가   [ko] field.prevMonthQty = "전월재고 (월마감 시 TB_INVENTORY_MONTHLY.END_QTY 로 갱신)"
+  추가   [ko] field.safetyQty = "안전재고"
+  건너뜀 [en] field.productCd (기존: "Product Cd")
+  추가   [en] field.currentQty = "Current Qty"
+  추가   [en] field.allocatedQty = "Allocated Qty"
+  추가   [en] field.availableQty = "Available Qty"
+  추가   [en] field.prevMonthQty = "Prev Month Qty"
+  추가   [en] field.safetyQty = "Safety Qty"
+  추가   [ko] menu.inventory = "재고"
+  추가   [en] menu.inventory = "Inventory"
+  추가   메뉴 BMKOO_L2_MENU ← { path: 'inventory', nameKey: 'menu.inventory', component: 'System/PgInventory', roles: STAFF_ROLES },
+  추가   팝업 라우트 /popup/inventory (inventoryForm)
+  코드   _CODE 로 끝나는 문자열 컬럼이 없습니다
+  생성   src/views/pages/System/PgInventory.vue
+  생성   src/views/pages/System/PgInventoryForm.vue
+  생성   src/views/pages/System/inventoryPopup.js
+
+완료. npm run check:menu 로 정합성을 확인하세요.
+```
+
+</details>
