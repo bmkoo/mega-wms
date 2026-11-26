@@ -99,6 +99,7 @@ const FIELDS = [
   { data: 'optionInfo', type: 'text', className: '', width: 220 },
   { data: 'settlementAmount', type: 'number', className: 'htRight', width: 90 },
   { data: 'paymentAmount', type: 'number', className: 'htRight', width: 90 },
+  { data: 'payType', type: 'text', className: '', width: 100 },
   { data: 'brandName', type: 'text', className: '', width: 120 },
   { data: 'maker', type: 'text', className: '', width: 220 },
   { data: 'transferYn', type: 'text', className: '', width: 90 },

@@ -583,6 +583,7 @@ const FIELDS = [
   { data: 'optionInfo', type: 'text', className: '', width: 200 },
   { data: 'settlementAmount', type: 'number', className: 'htRight', width: 90 },
   { data: 'paymentAmount', type: 'number', className: 'htRight', width: 90 },
+  { data: 'payType', type: 'text', className: '', width: 100 }, // 결제방법 (자사몰: 엑셀 결제방법 / 오픈마켓: 현금)
   { data: 'brandName', type: 'text', className: '', width: 120 },
   { data: 'maker', type: 'text', className: '', width: 160 },
   // 전송여부: TB_ORDER / TB_ORDER_ITEM 으로 이관되면 'Y'. 검색 기본값 'N' (아직 이관 안 된 원본)

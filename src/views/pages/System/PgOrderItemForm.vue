@@ -87,6 +87,7 @@ const FIELDS = [
   { data: 'deliveryStatus', type: 'text', className: '', width: 90 },
   { data: 'shippingNo', type: 'text', className: '', width: 120 },
   { data: 'isAssign', type: 'text', className: '', width: 90 },
+  { data: 'lineNoSub', type: 'number', className: 'htRight', width: 90 },
 ];
 
 const ID_FIELDS = ['orderId', 'lineNo'];

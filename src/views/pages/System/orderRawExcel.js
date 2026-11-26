@@ -4,7 +4,8 @@
  * - 종류는 헤더로 판별: 샵링커주문번호 → XLS_SHOPLINKER, 외부채널주문번호 → XLS_SHOP_NAVER, 주문코드(순서) → XLS_SHOP
  *   (값은 OrderRaw.srcType 주석과 같다)
  * - 컬럼은 헤더 이름으로 찾는다 (자사몰 일반·네이버 엑셀은 컬럼 순서가 서로 다름)
- * - 매핑 대상은 OrderRaw.java (TB_ORDER_RAW) 의 22개 항목뿐이다. 그 외 엑셀 컬럼(결제방법·주문상태·송장번호 …)은 읽지 않는다
+ * - 매핑 대상은 OrderRaw.java (TB_ORDER_RAW) 항목뿐이다. 그 외 엑셀 컬럼(주문상태·송장번호 …)은 읽지 않는다
+ * - 결제방법(payType): 자사몰 엑셀 = '결제방법' 컬럼, 오픈마켓(샵링커) 엑셀 = '현금' 고정 (2026-11-26)
  * - 숫자 셀(자체상품코드·수량·금액 …)은 "1000027144" 같은 정수 문자열/숫자로 읽는다
  * - 발주일(orderDate)은 엑셀에 없어 업로드한 날짜를 넣는다 (orderDateOf)
  *
@@ -49,7 +50,7 @@ export const COLUMNS = {
     정산예정액: 'paymentAmount', //  확정 매핑 그대로 (PAYMENT_AMOUNT ← 정산예정액, 이미 합계)
   },
   // 자사몰_naver.xls (2026-11-25 확정 매핑, 헤더 이름 그대로). 주문채널은 고정(FIXED), 발주일은 업로드한 날짜(orderDateOf),
-  // 브랜드명·제조사는 넣지 않는다. 주문 채널·외부채널품목번호·상점구분·주문상태·결제방법·송장 번호·HS코드는 읽지 않는다
+  // 브랜드명·제조사는 넣지 않는다. 주문 채널·외부채널품목번호·상점구분·주문상태·송장 번호·HS코드는 읽지 않는다
   [XLS_SHOP_NAVER]: {
     '주문 유형': 'orderType',
     외부채널주문번호: 'orderNo',
@@ -67,9 +68,10 @@ export const COLUMNS = {
     상품명: 'productName',
     옵션정보: 'optionInfo',
     '모바일앱 할인금액': ['settlementAmount', 'paymentAmount'], // 정산금액·결제금액 둘 다
+    결제방법: 'payType',
   },
   // 자사몰_일반.xls (2026-11-25 확정 매핑, 헤더 이름 그대로). 주문채널은 고정(FIXED), 발주일은 업로드한 날짜(orderDateOf).
-  // 주문코드(순서)·상품주문번호·송장 번호·주문상태·결제방법·상점구분·주문 채널은 읽지 않는다
+  // 주문코드(순서)·상품주문번호·송장 번호·주문상태·상점구분·주문 채널은 읽지 않는다
   [XLS_SHOP]: {
     '주문 유형': 'orderType',
     '주문 번호': 'orderNo',
@@ -89,13 +91,14 @@ export const COLUMNS = {
     '모바일앱 할인금액': ['settlementAmount', 'paymentAmount'], // 정산금액·결제금액 둘 다
     브랜드명: 'brandName',
     제조사: 'maker',
+    결제방법: 'payType',
   },
 };
 
 /** 종류별 고정값 (엑셀 헤더와 상관없이 넣는 값) */
 export const FIXED = {
   // ORDER_CHANNEL (2026-11-25 확정): 엑셀 종류별 고정 이름
-  [XLS_SHOPLINKER]: { orderChannel: '오픈마켓' },
+  [XLS_SHOPLINKER]: { orderChannel: '오픈마켓', payType: '현금' }, // 결제방법: 오픈마켓은 '현금' 고정 (2026-11-26)
   [XLS_SHOP_NAVER]: { orderChannel: '자사몰(NAVER)' },
   [XLS_SHOP]: { orderChannel: '자사몰(일반)' },
 };

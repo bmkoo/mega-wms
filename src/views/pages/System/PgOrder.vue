@@ -140,6 +140,7 @@ const FIELDS = [
   { data: 'itemCount', type: 'number', className: 'htRight', width: 90 },
   { data: 'paidAmount', type: 'number', className: 'htRight', width: 90 },
   { data: 'billAmount', type: 'number', className: 'htRight', width: 90 },
+  { data: 'payType', type: 'text', className: '', width: 100 }, // 결제방법 (이관 시 첫 원본 행의 결제방법)
   { data: 'privacyPurgedAt', type: 'date', className: 'htCenter', width: 140, format: 'YYYY-MM-DDTHH:mm:ss' },
   { data: 'receiverNm', type: 'text', className: '', width: 120 },
   { data: 'memo', type: 'text', className: '', width: 220 },

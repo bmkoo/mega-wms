@@ -121,6 +121,7 @@ const ORDER_COLUMNS = [
 /** 주문 품목(상품 명세) 그리드 컬럼 */
 const ITEM_COLUMNS = [
   { data: 'lineNo', type: 'id', className: 'htCenter', width: 55 },
+  { data: 'lineNoSub', type: 'id', className: 'htCenter', width: 70 }, // 포장단위순서 (TB_ORDER_ITEM.LINE_NO_SUB)
   { data: 'productCd', width: 110 },
   { data: 'productNm', width: 240 },
   { data: 'qty', type: 'number', className: 'htRight', width: 60 },
